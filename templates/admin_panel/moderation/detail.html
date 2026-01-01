@@ -1,0 +1,767 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block title %}Moderation Details - HandshakeMe Admin Panel{% endblock %}
+
+{% block page_title %}Content Moderation Details{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item"><a href="{% url 'admin_panel:moderation' %}">Moderation</a></li>
+<li class="breadcrumb-item active">Details #{{ queue_item.id }}</li>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<!-- Moderation Item Information -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Moderation Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">ID:</dt>
+                            <dd class="col-sm-8"><code>{{ queue_item.id }}</code></dd>
+                            
+                            <dt class="col-sm-4">Content Type:</dt>
+                            <dd class="col-sm-8">
+                                {% if queue_item.content_type.model == 'project' %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="stats-icon primary me-2" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                                            <i class="bi bi-briefcase"></i>
+                                        </div>
+                                        Project
+                                    </div>
+                                {% elif queue_item.content_type.model == 'advertisement' %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="stats-icon success me-2" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                                            <i class="bi bi-megaphone"></i>
+                                        </div>
+                                        Advertisement
+                                    </div>
+                                {% elif queue_item.content_type.model == 'review' %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="stats-icon warning me-2" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                                            <i class="bi bi-star"></i>
+                                        </div>
+                                        Review
+                                    </div>
+                                {% elif queue_item.content_type.model == 'user' %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="stats-icon danger me-2" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                                            <i class="bi bi-person"></i>
+                                        </div>
+                                        User
+                                    </div>
+                                {% else %}
+                                    <div class="d-flex align-items-center">
+                                        <div class="stats-icon primary me-2" style="width: 24px; height: 24px; font-size: 0.75rem;">
+                                            <i class="bi bi-file-text"></i>
+                                        </div>
+                                        {{ queue_item.content_type.model|title }}
+                                    </div>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Object ID:</dt>
+                            <dd class="col-sm-8">{{ queue_item.object_id }}</dd>
+                            
+                            <dt class="col-sm-4">Priority:</dt>
+                            <dd class="col-sm-8">
+                                {% if queue_item.priority == 'urgent' %}
+                                    <span class="badge badge-danger">Urgent</span>
+                                {% elif queue_item.priority == 'high' %}
+                                    <span class="badge badge-warning">High</span>
+                                {% elif queue_item.priority == 'normal' %}
+                                    <span class="badge badge-primary">Normal</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">Low</span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Status:</dt>
+                            <dd class="col-sm-8">
+                                {% if queue_item.status == 'pending' %}
+                                    <span class="badge badge-warning">Pending</span>
+                                {% elif queue_item.status == 'approved' %}
+                                    <span class="badge badge-success">Approved</span>
+                                {% elif queue_item.status == 'rejected' %}
+                                    <span class="badge badge-danger">Rejected</span>
+                                {% elif queue_item.status == 'needs_review' %}
+                                    <span class="badge badge-primary">Needs Review</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row">
+                            <dt class="col-sm-4">Created:</dt>
+                            <dd class="col-sm-8">{{ queue_item.created_at|date:"M d, Y H:i" }}</dd>
+                            
+                            <dt class="col-sm-4">Assigned:</dt>
+                            <dd class="col-sm-8">
+                                {% if queue_item.assigned_to %}
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name={{ queue_item.assigned_to.get_full_name|default:queue_item.assigned_to.email|urlencode }}&background=6366f1&color=fff&size=24" 
+                                             alt="Avatar" class="avatar-sm me-2">
+                                        {{ queue_item.assigned_to.get_full_name|default:queue_item.assigned_to.email }}
+                                    </div>
+                                    {% if queue_item.assigned_at %}
+                                        <small class="text-muted">{{ queue_item.assigned_at|date:"M d, Y H:i" }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">
+                                        <i class="bi bi-person-x me-1"></i>
+                                        Unassigned
+                                    </span>
+                                {% endif %}
+                            </dd>
+                            
+                            <dt class="col-sm-4">Moderated:</dt>
+                            <dd class="col-sm-8">
+                                {% if queue_item.moderated_by %}
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name={{ queue_item.moderated_by.get_full_name|default:queue_item.moderated_by.email|urlencode }}&background=10b981&color=fff&size=24" 
+                                             alt="Avatar" class="avatar-sm me-2">
+                                        {{ queue_item.moderated_by.get_full_name|default:queue_item.moderated_by.email }}
+                                    </div>
+                                    {% if queue_item.moderated_at %}
+                                        <small class="text-muted">{{ queue_item.moderated_at|date:"M d, Y H:i" }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">Not moderated</span>
+                                {% endif %}
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+                
+                {% if queue_item.reason %}
+                    <div class="mt-3">
+                        <h6>Reason:</h6>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            {{ queue_item.reason }}
+                        </div>
+                    </div>
+                {% endif %}
+                
+                {% if queue_item.notes %}
+                    <div class="mt-3">
+                        <h6>Notes:</h6>
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            {{ queue_item.notes }}
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>
+                    Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if queue_item.status == 'pending' %}
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-success" onclick="moderateContent('{{ queue_item.id }}', 'approve')">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Approve
+                        </button>
+                        <button class="btn btn-danger" onclick="moderateContent('{{ queue_item.id }}', 'reject')">
+                            <i class="bi bi-x-circle me-2"></i>
+                            Reject
+                        </button>
+                        <button class="btn btn-warning" onclick="moderateContent('{{ queue_item.id }}', 'needs_review')">
+                            <i class="bi bi-question-circle me-2"></i>
+                            Needs Review
+                        </button>
+                        <hr>
+                        <button class="btn btn-outline-primary" onclick="assignModerator('{{ queue_item.id }}')">
+                            <i class="bi bi-person-plus me-2"></i>
+                            Assign Moderator
+                        </button>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        This item has already been processed
+                    </div>
+                {% endif %}
+                
+                <hr>
+                <div class="d-grid">
+                    <a href="{% url 'admin_panel:moderation' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Back to Queue
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Content for Moderation -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-eye me-2"></i>
+                    Content for Moderation
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if content_object %}
+                    {% if queue_item.content_type.model == 'project' %}
+                        <!-- Project -->
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4>{{ content_object.title }}</h4>
+                                <p class="text-muted">{{ content_object.description|truncatewords:50 }}</p>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <strong>Category:</strong> {{ content_object.category.name|default:"Not specified" }}<br>
+                                        <strong>Budget:</strong> {{ content_object.budget|default:"Not specified" }}<br>
+                                        <strong>Deadline:</strong> {{ content_object.deadline|date:"M d, Y"|default:"Not specified" }}<br>
+                                        <strong>Status:</strong> {{ content_object.get_status_display }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Client:</strong> {{ content_object.client.get_full_name|default:content_object.client.email }}<br>
+                                        <strong>Created:</strong> {{ content_object.created_at|date:"M d, Y H:i" }}<br>
+                                        <strong>Updated:</strong> {{ content_object.updated_at|date:"M d, Y H:i" }}
+                                    </div>
+                                </div>
+                                
+                                {% if content_object.skills.exists %}
+                                    <div class="mt-3">
+                                        <strong>Skills:</strong>
+                                        <div class="mt-2">
+                                            {% for skill in content_object.skills.all %}
+                                                <span class="badge badge-secondary me-1">{{ skill.name }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4">
+                                {% if content_object.image %}
+                                    <img src="{{ content_object.image.url }}" alt="Project image" class="img-fluid rounded">
+                                {% else %}
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 200px;">
+                                        <i class="bi bi-image fs-1 text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% elif queue_item.content_type.model == 'user' %}
+                        <!-- User -->
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4>{{ content_object.get_full_name|default:content_object.email }}</h4>
+                                <p class="text-muted">{{ content_object.email }}</p>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <strong>Type:</strong> {{ content_object.get_user_type_display }}<br>
+                                        <strong>Status:</strong> 
+                                        {% if content_object.is_active %}
+                                            <span class="badge badge-success">Active</span>
+                                        {% else %}
+                                            <span class="badge badge-danger">Blocked</span>
+                                        {% endif %}<br>
+                                        <strong>Verification:</strong>
+                                        {% if content_object.is_verified %}
+                                            <span class="badge badge-success">Verified</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Not verified</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Registration:</strong> {{ content_object.date_joined|date:"M d, Y H:i" }}<br>
+                                        <strong>Last login:</strong> {{ content_object.last_login|date:"M d, Y H:i"|default:"Never" }}<br>
+                                        <strong>Phone:</strong> {{ content_object.phone_number|default:"Not specified" }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                {% if content_object.avatar %}
+                                    <img src="{{ content_object.avatar.url }}" alt="User avatar" class="img-fluid rounded">
+                                {% else %}
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 200px;">
+                                        <i class="bi bi-person fs-1 text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% elif queue_item.content_type.model == 'advertisement' %}
+                        <!-- Advertisement -->
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4>{{ content_object.title }}</h4>
+                                <p class="text-muted">{{ content_object.description|truncatewords:50 }}</p>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <strong>Category:</strong> {{ content_object.category.name|default:"Not specified" }}<br>
+                                        <strong>Price:</strong> {{ content_object.price|default:"Not specified" }}<br>
+                                        <strong>Type:</strong> {{ content_object.get_ad_type_display|default:"Not specified" }}<br>
+                                        <strong>Status:</strong> {{ content_object.get_status_display }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Author:</strong> {{ content_object.created_by.get_full_name|default:content_object.created_by.email }}<br>
+                                        <strong>Created:</strong> {{ content_object.created_at|date:"M d, Y H:i" }}<br>
+                                        <strong>Updated:</strong> {{ content_object.updated_at|date:"M d, Y H:i" }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                {% if content_object.image %}
+                                    <img src="{{ content_object.image.url }}" alt="Advertisement image" class="img-fluid rounded">
+                                {% else %}
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 200px;">
+                                        <i class="bi bi-megaphone fs-1 text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                    {% elif queue_item.content_type.model == 'review' %}
+                        <!-- Review -->
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="me-3">
+                                        {% for i in "12345" %}
+                                            {% if forloop.counter <= content_object.rating %}
+                                                <i class="bi bi-star-fill text-warning"></i>
+                                            {% else %}
+                                                <i class="bi bi-star text-muted"></i>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                    <h4 class="mb-0">{{ content_object.rating }}/5</h4>
+                                </div>
+                                
+                                <p class="text-muted">{{ content_object.comment }}</p>
+                                
+                                <div class="row mt-3">
+                                    <div class="col-md-6">
+                                        <strong>Review author:</strong> {{ content_object.reviewer.get_full_name|default:content_object.reviewer.email }}<br>
+                                        <strong>About user:</strong> {{ content_object.reviewed_user.get_full_name|default:content_object.reviewed_user.email }}<br>
+                                        <strong>Project:</strong> {{ content_object.project.title|default:"Not specified" }}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Created:</strong> {{ content_object.created_at|date:"M d, Y H:i" }}<br>
+                                        <strong>Status:</strong> 
+                                        {% if content_object.is_approved %}
+                                            <span class="badge badge-success">Approved</span>
+                                        {% else %}
+                                            <span class="badge badge-warning">Under moderation</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <!-- Other content type -->
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Content type: {{ queue_item.content_type.model|title }}
+                            <br>Object ID: {{ queue_item.object_id }}
+                            <br>Detailed information is not available for this content type.
+                        </div>
+                    {% endif %}
+                    
+                {% else %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        The related object has been deleted or is unavailable.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Moderation History -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Moderation History
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Moderation item created</h6>
+                            <p class="timeline-text">
+                                {{ queue_item.created_at|date:"M d, Y H:i" }}<br>
+                                <small class="text-muted">Priority: {{ queue_item.get_priority_display }}</small>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    {% if queue_item.assigned_to %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Moderator assigned</h6>
+                            <p class="timeline-text">
+                                {{ queue_item.assigned_at|date:"M d, Y H:i"|default:"Time not recorded" }}<br>
+                                <small class="text-muted">Moderator: {{ queue_item.assigned_to.get_full_name|default:queue_item.assigned_to.email }}</small>
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if queue_item.moderated_by and queue_item.moderated_at %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker {% if queue_item.status == 'approved' %}bg-success{% elif queue_item.status == 'rejected' %}bg-danger{% else %}bg-warning{% endif %}"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">{{ queue_item.get_status_display }}</h6>
+                            <p class="timeline-text">
+                                {{ queue_item.moderated_at|date:"M d, Y H:i" }}<br>
+                                <small class="text-muted">Moderator: {{ queue_item.moderated_by.get_full_name|default:queue_item.moderated_by.email }}</small>
+                                {% if queue_item.reason %}
+                                    <br><small class="text-danger">Reason: {{ queue_item.reason }}</small>
+                                {% endif %}
+                                {% if queue_item.notes %}
+                                    <br><small class="text-info">Notes: {{ queue_item.notes }}</small>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Additional history from action logs -->
+                    {% for log_entry in moderation_history %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-secondary"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">{{ log_entry.get_action_display }}</h6>
+                            <p class="timeline-text">
+                                {{ log_entry.timestamp|date:"M d, Y H:i" }}<br>
+                                <small class="text-muted">{{ log_entry.admin_user.get_full_name|default:log_entry.admin_user.email }}</small>
+                                {% if log_entry.description %}
+                                    <br><small class="text-muted">{{ log_entry.description }}</small>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                {% if not queue_item.assigned_to and not queue_item.moderated_by and not moderation_history %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-clock-history fs-2 mb-2"></i>
+                        <p>No moderation history for this item yet</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Content Moderation Modal -->
+<div class="modal fade" id="moderationModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="moderationModalTitle">Content Moderation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="moderationModalBody">
+                <!-- Content will be filled via JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmModerationBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Moderator Modal -->
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Moderator</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="moderatorSelect" class="form-label">Select Moderator</label>
+                    <select class="form-select" id="moderatorSelect">
+                        <option value="">Choose moderator</option>
+                        <option value="unassign">Remove assignment</option>
+                        {% for moderator in moderators %}
+                            <option value="{{ moderator.id }}">{{ moderator.get_full_name|default:moderator.email }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmAssignBtn">Assign</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 30px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 0;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid #6366f1;
+}
+
+.timeline-title {
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.timeline-text {
+    margin-bottom: 0;
+    color: #6c757d;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentQueueId = null;
+
+// Content moderation function (simplified version for detail view)
+function moderateContent(queueId, action) {
+    currentQueueId = queueId;
+    const modal = new bootstrap.Modal(document.getElementById('moderationModal'));
+    const title = document.getElementById('moderationModalTitle');
+    const body = document.getElementById('moderationModalBody');
+    const confirmBtn = document.getElementById('confirmModerationBtn');
+    
+    let actionText = '';
+    let bodyContent = '';
+    
+    if (action === 'approve') {
+        actionText = 'Approve Content';
+        title.textContent = 'Approve Content';
+        confirmBtn.className = 'btn btn-success';
+        bodyContent = `
+            <p>Are you sure you want to <strong>approve</strong> this content?</p>
+            <div class="mb-3">
+                <label for="moderationNotes" class="form-label">Notes (optional)</label>
+                <textarea class="form-control" id="moderationNotes" rows="3" placeholder="Add a comment to your decision..."></textarea>
+            </div>
+        `;
+    } else if (action === 'reject') {
+        actionText = 'Reject Content';
+        title.textContent = 'Reject Content';
+        confirmBtn.className = 'btn btn-danger';
+        bodyContent = `
+            <p>Are you sure you want to <strong>reject</strong> this content?</p>
+            <div class="mb-3">
+                <label for="rejectionReason" class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+                <select class="form-select" id="rejectionReason" required>
+                    <option value="">Select reason</option>
+                    <option value="inappropriate_content">Inappropriate Content</option>
+                    <option value="spam">Spam</option>
+                    <option value="offensive_language">Offensive Language</option>
+                    <option value="false_information">False Information</option>
+                    <option value="copyright_violation">Copyright Violation</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="moderationNotes" class="form-label">Additional Notes</label>
+                <textarea class="form-control" id="moderationNotes" rows="3" placeholder="Detailed explanation of rejection reason..."></textarea>
+            </div>
+        `;
+    } else if (action === 'needs_review') {
+        actionText = 'Needs Review';
+        title.textContent = 'Mark for Additional Review';
+        confirmBtn.className = 'btn btn-warning';
+        bodyContent = `
+            <p>This content will be marked as <strong>needing additional review</strong>.</p>
+            <div class="mb-3">
+                <label for="moderationNotes" class="form-label">Reason for additional review <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="moderationNotes" rows="3" placeholder="Explain why this content needs additional review..." required></textarea>
+            </div>
+        `;
+    }
+    
+    body.innerHTML = bodyContent;
+    confirmBtn.textContent = actionText;
+    
+    confirmBtn.onclick = function() {
+        performModeration(action);
+    };
+    
+    modal.show();
+}
+
+// Perform moderation
+function performModeration(action) {
+    const notes = document.getElementById('moderationNotes')?.value || '';
+    const reason = document.getElementById('rejectionReason')?.value || '';
+    
+    // Validation
+    if (action === 'reject' && !reason) {
+        alert('Please specify a rejection reason');
+        return;
+    }
+    
+    if (action === 'needs_review' && !notes.trim()) {
+        alert('Please specify a reason for additional review');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('notes', notes);
+    if (reason) formData.append('reason', reason);
+    
+    let url = '';
+    if (action === 'approve') {
+        url = `/admin-panel/moderation/${currentQueueId}/approve/`;
+    } else if (action === 'reject') {
+        url = `/admin-panel/moderation/${currentQueueId}/reject/`;
+    } else if (action === 'needs_review') {
+        url = `/admin-panel/moderation/${currentQueueId}/needs-review/`;
+    }
+    
+    fetch(url, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('moderationModal')).hide();
+            showAlert('success', data.message);
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        } else {
+            showAlert('danger', data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showAlert('danger', 'An error occurred while performing the operation');
+    });
+}
+
+// Assign moderator
+function assignModerator(queueId) {
+    currentQueueId = queueId;
+    const modal = new bootstrap.Modal(document.getElementById('assignModal'));
+    const confirmBtn = document.getElementById('confirmAssignBtn');
+    
+    confirmBtn.onclick = function() {
+        const moderatorId = document.getElementById('moderatorSelect').value;
+        
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('moderator_id', moderatorId);
+        
+        fetch(`/admin-panel/moderation/${currentQueueId}/assign/`, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('assignModal')).hide();
+                showAlert('success', data.message);
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1000);
+            } else {
+                showAlert('danger', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('danger', 'An error occurred while assigning moderator');
+        });
+    };
+    
+    modal.show();
+}
+
+// Show alert notification
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const container = document.querySelector('.content-wrapper');
+    container.insertBefore(alertDiv, container.firstChild);
+    
+    // Auto hide after 5 seconds
+    setTimeout(() => {
+        if (alertDiv.parentNode) {
+            alertDiv.remove();
+        }
+    }, 5000);
+}
+</script>
+{% endblock %}

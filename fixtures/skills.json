@@ -1,0 +1,164 @@
+[
+  {
+    "model": "contractors.skill",
+    "pk": 1,
+    "fields": {
+      "name": "Cabinet Installation",
+      "category": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 2,
+    "fields": {
+      "name": "Countertop Installation",
+      "category": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 3,
+    "fields": {
+      "name": "Kitchen Design",
+      "category": 1,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 4,
+    "fields": {
+      "name": "Tile Installation",
+      "category": 2,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 5,
+    "fields": {
+      "name": "Shower Installation",
+      "category": 2,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 6,
+    "fields": {
+      "name": "Bathroom Design",
+      "category": 2,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 7,
+    "fields": {
+      "name": "Hardwood Installation",
+      "category": 3,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 8,
+    "fields": {
+      "name": "Laminate Installation",
+      "category": 3,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 9,
+    "fields": {
+      "name": "Carpet Installation",
+      "category": 3,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 10,
+    "fields": {
+      "name": "Wiring Installation",
+      "category": 4,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 11,
+    "fields": {
+      "name": "Outlet Installation",
+      "category": 4,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 12,
+    "fields": {
+      "name": "Lighting Installation",
+      "category": 4,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 13,
+    "fields": {
+      "name": "Pipe Installation",
+      "category": 5,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 14,
+    "fields": {
+      "name": "Fixture Installation",
+      "category": 5,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 15,
+    "fields": {
+      "name": "Drain Cleaning",
+      "category": 5,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 16,
+    "fields": {
+      "name": "Interior Painting",
+      "category": 6,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 17,
+    "fields": {
+      "name": "Exterior Painting",
+      "category": 6,
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.skill",
+    "pk": 18,
+    "fields": {
+      "name": "Wallpaper Installation",
+      "category": 6,
+      "is_active": true
+    }
+  }
+]

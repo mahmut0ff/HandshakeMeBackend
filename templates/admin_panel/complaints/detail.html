@@ -1,0 +1,383 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block title %}Жалоба #{{ complaint.id|slice:":8" }} - HandshakeMe Админ-панель{% endblock %}
+
+{% block page_title %}Детали жалобы{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-flag me-2"></i>
+                    Жалоба #{{ complaint.id|slice:":8" }}...
+                    {% if complaint.status == 'pending' %}
+                        <span class="badge bg-warning ms-2">{{ complaint.get_status_display }}</span>
+                    {% elif complaint.status == 'in_review' %}
+                        <span class="badge bg-info ms-2">{{ complaint.get_status_display }}</span>
+                    {% elif complaint.status == 'resolved' %}
+                        <span class="badge bg-success ms-2">{{ complaint.get_status_display }}</span>
+                    {% elif complaint.status == 'rejected' %}
+                        <span class="badge bg-danger ms-2">{{ complaint.get_status_display }}</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Заявитель:</strong><br>
+                        <div class="d-flex align-items-center mt-1">
+                            <i class="bi bi-person-circle me-2 fs-4"></i>
+                            <div>
+                                <div>{{ complaint.complainant.get_full_name|default:complaint.complainant.email }}</div>
+                                <small class="text-muted">{{ complaint.complainant.email }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Тип жалобы:</strong><br>
+                        <span class="badge bg-info mt-1">{{ complaint.get_complaint_type_display }}</span>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>Дата создания:</strong><br>
+                        <span class="text-muted">{{ complaint.created_at|date:"d.m.Y H:i" }}</span>
+                        <small class="d-block text-muted">{{ complaint.created_at|timesince }} назад</small>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>Назначено:</strong><br>
+                        {% if complaint.assigned_to %}
+                            <div class="d-flex align-items-center mt-1">
+                                <i class="bi bi-person-check me-1"></i>
+                                <span>{{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.email }}</span>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">Не назначено</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <strong>Описание жалобы:</strong>
+                    <div class="mt-2 p-3 bg-light rounded">
+                        {{ complaint.description|linebreaks }}
+                    </div>
+                </div>
+                
+                <!-- Доказательства -->
+                {% if complaint.evidence %}
+                <div class="mb-3">
+                    <strong>Приложенные доказательства:</strong>
+                    <div class="mt-2">
+                        {% for evidence in complaint.evidence %}
+                            <div class="border rounded p-2 mb-2">
+                                {% if evidence.type == 'image' %}
+                                    <i class="bi bi-image me-2"></i>
+                                    <a href="{{ evidence.url }}" target="_blank">{{ evidence.name|default:"Изображение" }}</a>
+                                {% elif evidence.type == 'file' %}
+                                    <i class="bi bi-file-earmark me-2"></i>
+                                    <a href="{{ evidence.url }}" target="_blank">{{ evidence.name|default:"Файл" }}</a>
+                                {% else %}
+                                    <i class="bi bi-link me-2"></i>
+                                    <a href="{{ evidence.url }}" target="_blank">{{ evidence.url }}</a>
+                                {% endif %}
+                                {% if evidence.description %}
+                                    <div class="text-muted small mt-1">{{ evidence.description }}</div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                <!-- Объект жалобы -->
+                {% if complaint.content_object %}
+                <div class="mb-3">
+                    <strong>Объект жалобы:</strong>
+                    <div class="mt-2 p-3 border rounded">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <div class="fw-bold">{{ complaint.content_type.model|title }}</div>
+                                <div class="text-muted">ID: {{ complaint.object_id }}</div>
+                                {% if complaint.content_object.title %}
+                                    <div class="mt-1">{{ complaint.content_object.title }}</div>
+                                {% endif %}
+                            </div>
+                            <a href="#" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye me-1"></i>Просмотр
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if complaint.resolution %}
+                <div class="mb-3">
+                    <strong>Решение:</strong>
+                    <div class="mt-2 p-3 bg-light rounded">
+                        {{ complaint.resolution|linebreaks }}
+                    </div>
+                    <small class="text-muted">
+                        Решено {{ complaint.resolved_at|date:"d.m.Y H:i" }}
+                        {% if complaint.assigned_to %}
+                            пользователем {{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.email }}
+                        {% endif %}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- История переписки -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-chat-dots me-2"></i>
+                    История переписки
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-primary"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Жалоба подана</h6>
+                            <p class="timeline-text">{{ complaint.description|truncatewords:20 }}</p>
+                            <small class="text-muted">{{ complaint.created_at|date:"d.m.Y H:i" }} - {{ complaint.complainant.get_full_name|default:complaint.complainant.email }}</small>
+                        </div>
+                    </div>
+                    
+                    {% if complaint.assigned_to %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker bg-info"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">Назначено модератору</h6>
+                            <p class="timeline-text">Жалоба назначена {{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.email }}</p>
+                            <small class="text-muted">{{ complaint.updated_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                    
+                    {% if complaint.resolution %}
+                    <div class="timeline-item">
+                        <div class="timeline-marker {% if complaint.status == 'resolved' %}bg-success{% else %}bg-danger{% endif %}"></div>
+                        <div class="timeline-content">
+                            <h6 class="timeline-title">
+                                {% if complaint.status == 'resolved' %}
+                                    Жалоба решена
+                                {% else %}
+                                    Жалоба отклонена
+                                {% endif %}
+                            </h6>
+                            <p class="timeline-text">{{ complaint.resolution|truncatewords:20 }}</p>
+                            <small class="text-muted">{{ complaint.resolved_at|date:"d.m.Y H:i" }} - {{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.email }}</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4 mb-4">
+        <!-- Информационная панель -->
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Информация
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="border-end">
+                            <div class="fs-4 fw-bold text-primary">{{ complaint.created_at|timesince }}</div>
+                            <small class="text-muted">Время с создания</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fs-4 fw-bold text-info">
+                            {% if complaint.resolved_at %}
+                                Завершено
+                            {% else %}
+                                В работе
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">Статус</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Действия -->
+        {% if complaint.status != 'resolved' and complaint.status != 'rejected' %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-gear me-2"></i>
+                    Действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        {{ form.action.label_tag }}
+                        <div>
+                            {% for choice in form.action %}
+                                <div class="form-check">
+                                    {{ choice.tag }}
+                                    <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                        {{ choice.choice_label }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        {{ form.resolution.label_tag }}
+                        {{ form.resolution }}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.notify_complainant }}
+                            <label class="form-check-label" for="{{ form.notify_complainant.id_for_label }}">
+                                {{ form.notify_complainant.label }}
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.notify_reported_user }}
+                            <label class="form-check-label" for="{{ form.notify_reported_user.id_for_label }}">
+                                {{ form.notify_reported_user.label }}
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-check-circle me-1"></i>
+                        Применить решение
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+        
+        <!-- Быстрые действия -->
+        {% if complaint.status == 'pending' %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning me-2"></i>
+                    Быстрые действия
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-success" onclick="quickAction('take')">
+                        <i class="bi bi-hand-thumbs-up me-1"></i>
+                        Взять в работу
+                    </button>
+                    <button class="btn btn-outline-info" onclick="quickAction('reassign')">
+                        <i class="bi bi-arrow-repeat me-1"></i>
+                        Переназначить
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 20px;
+}
+
+.timeline-marker {
+    position: absolute;
+    left: -22px;
+    top: 5px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #fff;
+    box-shadow: 0 0 0 2px #dee2e6;
+}
+
+.timeline-content {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 3px solid #007bff;
+}
+
+.timeline-title {
+    margin-bottom: 5px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.timeline-text {
+    margin-bottom: 5px;
+    font-size: 13px;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function quickAction(action) {
+    if (action === 'take') {
+        // Взять жалобу в работу
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('assignee_id', '{{ request.user.id }}');
+        formData.append('complaint_ids', '{{ complaint.id }}');
+        
+        fetch('{% url "admin_panel:complaint_bulk_assign" %}', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.error);
+            }
+        });
+    } else if (action === 'reassign') {
+        // Переназначить другому модератору
+        alert('Функция переназначения будет реализована в следующей версии');
+    }
+}
+</script>
+{% endblock %}

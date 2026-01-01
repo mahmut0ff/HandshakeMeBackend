@@ -1,0 +1,353 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Email Кампании - HandshakeMe Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Email Кампании</h1>
+        <p class="text-muted">Управление массовыми рассылками</p>
+    </div>
+    <a href="{% url 'admin_panel:email_campaign_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Создать кампанию
+    </a>
+</div>
+
+<!-- Фильтры -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Поиск</label>
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Поиск по названию..." 
+                       value="{{ current_filters.search }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Статус</label>
+                <select name="status" class="form-select">
+                    <option value="">Все статусы</option>
+                    {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Аудитория</label>
+                <select name="target_audience" class="form-select">
+                    <option value="">Все аудитории</option>
+                    {% for value, label in audience_choices %}
+                    <option value="{{ value }}" {% if current_filters.target_audience == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary">Применить</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Массовые действия -->
+<div class="card mb-3" id="bulk-actions" style="display: none;">
+    <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <span id="selected-count">0</span> кампаний выбрано
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn btn-success" onclick="bulkSendCampaigns()">
+                    <i class="bi bi-send me-2"></i>Отправить выбранные
+                </button>
+                <button type="button" class="btn btn-danger" onclick="bulkDeleteCampaigns()">
+                    <i class="bi bi-trash me-2"></i>Удалить выбранные
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Список кампаний -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th width="40">
+                        <input type="checkbox" id="select-all" class="form-check-input">
+                    </th>
+                    <th>Название</th>
+                    <th>Статус</th>
+                    <th>Аудитория</th>
+                    <th>Получатели</th>
+                    <th>Доставлено</th>
+                    <th>Создана</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for campaign in campaigns %}
+                <tr>
+                    <td>
+                        <input type="checkbox" class="form-check-input campaign-checkbox" 
+                               value="{{ campaign.id }}" data-status="{{ campaign.status }}">
+                    </td>
+                    <td>
+                        <div>
+                            <strong>{{ campaign.name }}</strong>
+                            <br>
+                            <small class="text-muted">{{ campaign.subject|truncatechars:50 }}</small>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if campaign.status == 'sent' %}success{% elif campaign.status == 'sending' %}warning{% elif campaign.status == 'scheduled' %}info{% else %}secondary{% endif %}">
+                            {{ campaign.get_status_display }}
+                        </span>
+                    </td>
+                    <td>{{ campaign.get_target_audience_display }}</td>
+                    <td>{{ campaign.total_recipients|default:0 }}</td>
+                    <td>
+                        {{ campaign.delivered_count|default:0 }}
+                        {% if campaign.total_recipients > 0 %}
+                        <small class="text-muted">({{ campaign.delivery_rate|floatformat:1 }}%)</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ campaign.created_at|date:"d.m.Y H:i" }}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'admin_panel:email_campaign_preview' campaign.id %}" 
+                               class="btn btn-outline-info" title="Предварительный просмотр">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            {% if campaign.status == 'draft' or campaign.status == 'scheduled' %}
+                            <a href="{% url 'admin_panel:email_campaign_edit' campaign.id %}" 
+                               class="btn btn-outline-primary" title="Редактировать">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn btn-outline-success" 
+                                    onclick="sendCampaign('{{ campaign.id }}', '{{ campaign.name }}')"
+                                    title="Отправить">
+                                <i class="bi bi-send"></i>
+                            </button>
+                            {% endif %}
+                            {% if campaign.status == 'sent' %}
+                            <a href="{% url 'admin_panel:email_campaign_statistics' campaign.id %}" 
+                               class="btn btn-outline-info" title="Статистика">
+                                <i class="bi bi-graph-up"></i>
+                            </a>
+                            {% endif %}
+                            {% if campaign.status != 'sending' %}
+                            <button class="btn btn-outline-danger" 
+                                    onclick="deleteCampaign('{{ campaign.id }}', '{{ campaign.name }}')"
+                                    title="Удалить">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" class="text-center py-4">
+                        <i class="bi bi-envelope display-4 text-muted mb-2"></i>
+                        <p class="text-muted">Кампании не найдены</p>
+                        <a href="{% url 'admin_panel:email_campaign_create' %}" class="btn btn-primary">
+                            Создать первую кампанию
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Пагинация -->
+{% if page_obj.has_other_pages %}
+<nav class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Предыдущая</a>
+        </li>
+        {% endif %}
+        
+        {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+        <li class="page-item active">
+            <span class="page-link">{{ num }}</span>
+        </li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+        </li>
+        {% endif %}
+        {% endfor %}
+        
+        {% if page_obj.has_next %}
+        <li class="page-item">
+            <a class="page-link" href="?page={{ page_obj.next_page_number }}">Следующая</a>
+        </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Управление выбором кампаний
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('select-all');
+    const campaignCheckboxes = document.querySelectorAll('.campaign-checkbox');
+    const bulkActions = document.getElementById('bulk-actions');
+    const selectedCount = document.getElementById('selected-count');
+    
+    // Обработчик "Выбрать все"
+    selectAllCheckbox.addEventListener('change', function() {
+        campaignCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActions();
+    });
+    
+    // Обработчики отдельных чекбоксов
+    campaignCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+    
+    function updateBulkActions() {
+        const selectedCampaigns = document.querySelectorAll('.campaign-checkbox:checked');
+        const count = selectedCampaigns.length;
+        
+        selectedCount.textContent = count;
+        bulkActions.style.display = count > 0 ? 'block' : 'none';
+        
+        // Обновляем состояние "Выбрать все"
+        selectAllCheckbox.indeterminate = count > 0 && count < campaignCheckboxes.length;
+        selectAllCheckbox.checked = count === campaignCheckboxes.length;
+    }
+});
+
+function getSelectedCampaigns() {
+    return Array.from(document.querySelectorAll('.campaign-checkbox:checked')).map(cb => cb.value);
+}
+
+function getSelectedCampaignsByStatus(status) {
+    return Array.from(document.querySelectorAll('.campaign-checkbox:checked'))
+        .filter(cb => cb.dataset.status === status)
+        .map(cb => cb.value);
+}
+
+function bulkSendCampaigns() {
+    const selectedIds = getSelectedCampaigns();
+    const sendableIds = getSelectedCampaignsByStatus('draft').concat(getSelectedCampaignsByStatus('scheduled'));
+    
+    if (sendableIds.length === 0) {
+        alert('Выберите кампании в статусе "Черновик" или "Запланирована" для отправки');
+        return;
+    }
+    
+    if (confirm(`Отправить ${sendableIds.length} выбранных кампаний?`)) {
+        fetch('{% url "admin_panel:email_campaign_bulk_action" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'action': 'send',
+                'campaign_ids': sendableIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+function bulkDeleteCampaigns() {
+    const selectedIds = getSelectedCampaigns();
+    const deletableIds = selectedIds.filter(id => {
+        const checkbox = document.querySelector(`input[value="${id}"]`);
+        return checkbox.dataset.status !== 'sending';
+    });
+    
+    if (deletableIds.length === 0) {
+        alert('Выберите кампании для удаления (нельзя удалять отправляющиеся кампании)');
+        return;
+    }
+    
+    if (confirm(`Удалить ${deletableIds.length} выбранных кампаний?`)) {
+        fetch('{% url "admin_panel:email_campaign_bulk_action" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'action': 'delete',
+                'campaign_ids': deletableIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+function sendCampaign(campaignId, campaignName) {
+    if (confirm(`Отправить кампанию "${campaignName}" сейчас?`)) {
+        fetch(`/admin-panel/email/campaigns/${campaignId}/send/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'send_now=true'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+function deleteCampaign(campaignId, campaignName) {
+    if (confirm(`Удалить кампанию "${campaignName}"?`)) {
+        fetch(`/admin-panel/email/campaigns/${campaignId}/delete/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

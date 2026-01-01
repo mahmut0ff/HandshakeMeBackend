@@ -1,0 +1,262 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Dashboard - HandshakeMe Admin Panel{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block breadcrumb %}
+<li class="breadcrumb-item active">Dashboard</li>
+{% endblock %}
+
+{% block content %}
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card primary">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="flex-grow-1">
+                    <div class="stats-number">{{ stats.total_users|default:0 }}</div>
+                    <div class="stats-label">Total Users</div>
+                    <div class="stats-change positive">
+                        <i class="bi bi-arrow-up me-1"></i>
+                        +{{ stats.new_users_week|default:0 }} this week
+                    </div>
+                </div>
+                <div class="stats-icon primary">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card success">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="flex-grow-1">
+                    <div class="stats-number">{{ stats.active_users|default:0 }}</div>
+                    <div class="stats-label">Active Users</div>
+                    <div class="stats-change positive">
+                        <i class="bi bi-arrow-up me-1"></i>
+                        Last 7 days
+                    </div>
+                </div>
+                <div class="stats-icon success">
+                    <i class="bi bi-person-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card warning">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="flex-grow-1">
+                    <div class="stats-number">{{ stats.pending_complaints|default:0 }}</div>
+                    <div class="stats-label">Pending Complaints</div>
+                    <div class="stats-change">
+                        <i class="bi bi-clock me-1"></i>
+                        Need review
+                    </div>
+                </div>
+                <div class="stats-icon warning">
+                    <i class="bi bi-flag"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="stats-card danger">
+            <div class="d-flex align-items-center justify-content-between">
+                <div class="flex-grow-1">
+                    <div class="stats-number">{{ stats.pending_moderation|default:0 }}</div>
+                    <div class="stats-label">Moderation Queue</div>
+                    <div class="stats-change">
+                        <i class="bi bi-eye me-1"></i>
+                        Items in queue
+                    </div>
+                </div>
+                <div class="stats-icon danger">
+                    <i class="bi bi-shield-exclamation"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-lightning me-2"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{% url 'admin_panel:users' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center py-3">
+                            <i class="bi bi-people me-2"></i>
+                            Manage Users
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{% url 'admin_panel:complaints' %}" class="btn btn-outline-warning w-100 d-flex align-items-center justify-content-center py-3">
+                            <i class="bi bi-flag me-2"></i>
+                            Review Complaints
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{% url 'admin_panel:moderation' %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center py-3">
+                            <i class="bi bi-shield-exclamation me-2"></i>
+                            Content Moderation
+                        </a>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-3">
+                        <a href="{% url 'admin_panel:notifications' %}" class="btn btn-outline-success w-100 d-flex align-items-center justify-content-center py-3">
+                            <i class="bi bi-bell me-2"></i>
+                            Send Notification
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity Table -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Recent Activity
+                </h5>
+                <a href="{% url 'admin_panel:audit_logs' %}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>Target</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name=John+Doe&background=6366f1&color=fff&size=32" 
+                                             alt="Avatar" class="avatar me-3">
+                                        <div>
+                                            <div class="fw-semibold">John Doe</div>
+                                            <small class="text-muted">john@example.com</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>User Registration</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name=Jane+Smith&background=10b981&color=fff&size=24" 
+                                             alt="Avatar" class="avatar-sm me-2">
+                                        Jane Smith
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-success">Approved</span></td>
+                                <td>
+                                    <div>2024-01-15</div>
+                                    <small class="text-muted">10:30 AM</small>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name=Admin+User&background=f59e0b&color=fff&size=32" 
+                                             alt="Avatar" class="avatar me-3">
+                                        <div>
+                                            <div class="fw-semibold">Admin User</div>
+                                            <small class="text-muted">admin@example.com</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Content Moderation</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name=Mike+Johnson&background=ef4444&color=fff&size=24" 
+                                             alt="Avatar" class="avatar-sm me-2">
+                                        Mike Johnson
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-warning">Pending</span></td>
+                                <td>
+                                    <div>2024-01-15</div>
+                                    <small class="text-muted">09:15 AM</small>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name=Sarah+Wilson&background=8b5cf6&color=fff&size=32" 
+                                             alt="Avatar" class="avatar me-3">
+                                        <div>
+                                            <div class="fw-semibold">Sarah Wilson</div>
+                                            <small class="text-muted">sarah@example.com</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Complaint Filed</td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <img src="https://ui-avatars.com/api/?name=Bob+Brown&background=06b6d4&color=fff&size=24" 
+                                             alt="Avatar" class="avatar-sm me-2">
+                                        Bob Brown
+                                    </div>
+                                </td>
+                                <td><span class="badge badge-danger">Rejected</span></td>
+                                <td>
+                                    <div>2024-01-14</div>
+                                    <small class="text-muted">04:45 PM</small>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

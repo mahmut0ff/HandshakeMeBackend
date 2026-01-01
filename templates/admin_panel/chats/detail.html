@@ -1,0 +1,128 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Чат #{{ chat.id }} - HandshakeMe Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Чат #{{ chat.id }}</h1>
+        <p class="text-muted">{{ chat }}</p>
+    </div>
+    <div class="btn-group">
+        <a href="{% url 'admin_panel:chats' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Назад к списку
+        </a>
+        {% if chat.is_active %}
+        <button class="btn btn-warning" onclick="blockChat()">
+            <i class="bi bi-lock me-2"></i>Заблокировать чат
+        </button>
+        {% else %}
+        <button class="btn btn-success" onclick="unblockChat()">
+            <i class="bi bi-unlock me-2"></i>Разблокировать чат
+        </button>
+        {% endif %}
+        <button class="btn btn-primary" onclick="showMessageModal()">
+            <i class="bi bi-chat-text me-2"></i>Отправить сообщение
+        </button>
+    </div>
+</div>
+
+<!-- Информация о чате -->
+<div class="row mb-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h6>Информация о чате</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>ID:</strong> {{ chat.id }}</p>
+                        <p><strong>Тип:</strong> {{ chat.get_room_type_display }}</p>
+                        <p><strong>Статус:</strong> 
+                            {% if chat.is_active %}
+                            <span class="badge bg-success">Активный</span>
+                            {% else %}
+                            <span class="badge bg-danger">Заблокирован</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Создан:</strong> {{ chat.created_at|date:"d.m.Y H:i" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Участники:</strong> {{ chat_stats.participants_count }}</p>
+                        <p><strong>Всего сообщений:</strong> {{ chat_stats.total_messages }}</p>
+                        <p><strong>Создатель:</strong> 
+                            {% if chat.created_by %}
+                            {{ chat.created_by.get_full_name|default:chat.created_by.email }}
+                            {% else %}
+                            <span class="text-muted">Неизвестно</span>
+                            {% endif %}
+                        </p>
+                        {% if chat.project %}
+                        <p><strong>Проект:</strong> {{ chat.project.title }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Участники чата -->
+                <h6 class="mt-3">Участники чата:</h6>
+                <div class="row">
+                    {% for participant in chat.participants.all %}
+                    <div class="col-md-6 mb-2">
+                        <div class="d-flex align-items-center">
+                            <div class="me-2">
+                                <i class="bi bi-person-circle text-muted"></i>
+                            </div>
+                            <div>
+                                <strong>{{ participant.get_full_name|default:participant.email }}</strong>
+                                <br>
+                                <small class="text-muted">{{ participant.email }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h6>Статистика сообщений</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Текстовые:</span>
+                        <strong>{{ chat_stats.text_messages }}</strong>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Изображения:</span>
+                        <strong>{{ chat_stats.image_messages }}</strong>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Файлы:</span>
+                        <strong>{{ chat_stats.file_messages }}</strong>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Системные:</span>
+                        <strong>{{ chat_stats.system_messages }}</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Фильтры сообщений -->
+<div class="card mb-4">
+    <div class=
+{% endblock %}
+
+{% include 'admin_panel/chats/detail_modal.html' %}

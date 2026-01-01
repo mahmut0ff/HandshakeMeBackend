@@ -1,0 +1,407 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Аналитика Push уведомлений - HandshakeMe Админ-панель{% endblock %}
+
+{% block page_title %}Аналитика Push уведомлений{% endblock %}
+
+{% block extra_css %}
+<style>
+.analytics-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    transition: transform 0.3s ease;
+}
+
+.analytics-card:hover {
+    transform: translateY(-5px);
+}
+
+.metric-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    line-height: 1;
+}
+
+.metric-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.chart-container {
+    position: relative;
+    height: 300px;
+    margin: 20px 0;
+}
+
+.top-notification {
+    border-left: 4px solid #007bff;
+    padding-left: 15px;
+    margin-bottom: 15px;
+}
+
+.progress-ring {
+    width: 120px;
+    height: 120px;
+}
+
+.progress-ring circle {
+    transition: stroke-dasharray 0.35s;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Общая статистика -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card analytics-card h-100">
+            <div class="card-body text-center">
+                <div class="metric-value">{{ analytics.total_notifications }}</div>
+                <div class="metric-label">Всего уведомлений</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card analytics-card h-100">
+            <div class="card-body text-center">
+                <div class="metric-value">{{ analytics.sent_notifications }}</div>
+                <div class="metric-label">Отправлено</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card analytics-card h-100">
+            <div class="card-body text-center">
+                <div class="metric-value">{{ analytics.scheduled_notifications }}</div>
+                <div class="metric-label">Запланировано</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card analytics-card h-100">
+            <div class="card-body text-center">
+                <div class="metric-value">{{ analytics.failed_notifications }}</div>
+                <div class="metric-label">Ошибки</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Средние показатели -->
+<div class="row mb-4">
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="progress-ring mx-auto mb-3">
+                    <svg width="120" height="120">
+                        <circle cx="60" cy="60" r="50" stroke="#e9ecef" stroke-width="8" fill="transparent"/>
+                        <circle cx="60" cy="60" r="50" stroke="#28a745" stroke-width="8" fill="transparent"
+                                stroke-dasharray="{{ analytics.avg_delivery_rate|floatformat:0 }}, 100"
+                                stroke-linecap="round"/>
+                        <text x="60" y="65" text-anchor="middle" font-size="18" font-weight="bold" fill="#28a745">
+                            {{ analytics.avg_delivery_rate|floatformat:1 }}%
+                        </text>
+                    </svg>
+                </div>
+                <h6>Средняя доставляемость</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="progress-ring mx-auto mb-3">
+                    <svg width="120" height="120">
+                        <circle cx="60" cy="60" r="50" stroke="#e9ecef" stroke-width="8" fill="transparent"/>
+                        <circle cx="60" cy="60" r="50" stroke="#007bff" stroke-width="8" fill="transparent"
+                                stroke-dasharray="{{ analytics.avg_open_rate|floatformat:0 }}, 100"
+                                stroke-linecap="round"/>
+                        <text x="60" y="65" text-anchor="middle" font-size="18" font-weight="bold" fill="#007bff">
+                            {{ analytics.avg_open_rate|floatformat:1 }}%
+                        </text>
+                    </svg>
+                </div>
+                <h6>Средняя открываемость</h6>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4 mb-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="progress-ring mx-auto mb-3">
+                    <svg width="120" height="120">
+                        <circle cx="60" cy="60" r="50" stroke="#e9ecef" stroke-width="8" fill="transparent"/>
+                        <circle cx="60" cy="60" r="50" stroke="#ffc107" stroke-width="8" fill="transparent"
+                                stroke-dasharray="{{ analytics.avg_click_rate|floatformat:0 }}, 100"
+                                stroke-linecap="round"/>
+                        <text x="60" y="65" text-anchor="middle" font-size="18" font-weight="bold" fill="#ffc107">
+                            {{ analytics.avg_click_rate|floatformat:1 }}%
+                        </text>
+                    </svg>
+                </div>
+                <h6>Средняя кликабельность</h6>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- График активности по дням -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-graph-up me-2"></i>
+                    Активность за последние 30 дней
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="dailyChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Топ уведомления -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-trophy me-2"></i>
+                    Топ уведомления по открытиям
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if top_notifications %}
+                    {% for notification in top_notifications %}
+                    <div class="top-notification">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <h6 class="mb-1">{{ notification.title }}</h6>
+                                <p class="text-muted mb-1">{{ notification.message|truncatechars:80 }}</p>
+                                <small class="text-muted">
+                                    {{ notification.sent_at|date:"d.m.Y H:i" }} • 
+                                    {{ notification.get_target_audience_display }}
+                                </small>
+                            </div>
+                            <div class="text-end">
+                                <div class="fw-bold text-primary">{{ notification.open_rate|floatformat:1 }}%</div>
+                                <small class="text-muted">{{ notification.opened_count }}/{{ notification.delivered_count }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-bell fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">Нет отправленных уведомлений</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Статистика по периодам -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-calendar me-2"></i>
+                    Статистика по периодам
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Сегодня</span>
+                        <strong>{{ daily_stats.0.count|default:0 }}</strong>
+                    </div>
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar bg-success" style="width: {% if daily_stats.0.count %}{{ daily_stats.0.count|floatformat:0 }}{% else %}0{% endif %}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Вчера</span>
+                        <strong>{{ daily_stats.1.count|default:0 }}</strong>
+                    </div>
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar bg-info" style="width: {% if daily_stats.1.count %}{{ daily_stats.1.count|floatformat:0 }}{% else %}0{% endif %}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Неделя</span>
+                        <strong>
+                            {% with week_total=0 %}
+                                {% for day in daily_stats|slice:":7" %}
+                                    {% with week_total=week_total|add:day.count %}{% endwith %}
+                                {% endfor %}
+                                {{ week_total }}
+                            {% endwith %}
+                        </strong>
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="d-flex justify-content-between">
+                        <span>Месяц</span>
+                        <strong>
+                            {% with month_total=0 %}
+                                {% for day in daily_stats %}
+                                    {% with month_total=month_total|add:day.count %}{% endwith %}
+                                {% endfor %}
+                                {{ month_total }}
+                            {% endwith %}
+                        </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Рекомендации -->
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-lightbulb me-2"></i>
+                    Рекомендации
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <small>
+                        <strong>Оптимальное время отправки:</strong><br>
+                        Будние дни: 10:00-12:00, 15:00-17:00<br>
+                        Выходные: 11:00-13:00
+                    </small>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <small>
+                        <strong>Длина сообщения:</strong><br>
+                        Заголовок: до 50 символов<br>
+                        Текст: до 120 символов
+                    </small>
+                </div>
+                
+                {% if analytics.avg_open_rate < 20 %}
+                <div class="alert alert-danger">
+                    <small>
+                        <strong>Низкая открываемость!</strong><br>
+                        Попробуйте более привлекательные заголовки и персонализацию.
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+// График активности по дням
+const dailyData = [
+    {% for day in daily_stats %}
+    {
+        date: '{{ day.date|date:"d.m" }}',
+        count: {{ day.count|default:0 }},
+        recipients: {{ day.total_recipients|default:0 }},
+        delivery_rate: {{ day.avg_delivery_rate|default:0 }}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+];
+
+const ctx = document.getElementById('dailyChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: dailyData.map(d => d.date),
+        datasets: [{
+            label: 'Количество уведомлений',
+            data: dailyData.map(d => d.count),
+            borderColor: '#007bff',
+            backgroundColor: 'rgba(0, 123, 255, 0.1)',
+            tension: 0.4,
+            fill: true
+        }, {
+            label: 'Получателей',
+            data: dailyData.map(d => d.recipients),
+            borderColor: '#28a745',
+            backgroundColor: 'rgba(40, 167, 69, 0.1)',
+            tension: 0.4,
+            yAxisID: 'y1'
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Количество уведомлений'
+                }
+            },
+            y1: {
+                type: 'linear',
+                display: true,
+                position: 'right',
+                title: {
+                    display: true,
+                    text: 'Получателей'
+                },
+                grid: {
+                    drawOnChartArea: false,
+                }
+            }
+        },
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top'
+            },
+            tooltip: {
+                callbacks: {
+                    afterBody: function(context) {
+                        const index = context[0].dataIndex;
+                        const deliveryRate = dailyData[index].delivery_rate;
+                        return `Доставляемость: ${deliveryRate.toFixed(1)}%`;
+                    }
+                }
+            }
+        }
+    }
+});
+
+// Анимация для кольцевых прогресс-баров
+document.addEventListener('DOMContentLoaded', function() {
+    const circles = document.querySelectorAll('.progress-ring circle:last-child');
+    circles.forEach(circle => {
+        const dashArray = circle.getAttribute('stroke-dasharray');
+        if (dashArray) {
+            const [value] = dashArray.split(',');
+            const circumference = 2 * Math.PI * 50; // r=50
+            const offset = circumference - (value / 100) * circumference;
+            
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = circumference;
+            
+            setTimeout(() => {
+                circle.style.strokeDashoffset = offset;
+            }, 500);
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,90 @@
+[
+  {
+    "model": "contractors.category",
+    "pk": 1,
+    "fields": {
+      "name": "Kitchen Renovation",
+      "slug": "kitchen-renovation",
+      "icon": "🍳",
+      "description": "Complete kitchen remodeling and renovation services",
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.category",
+    "pk": 2,
+    "fields": {
+      "name": "Bathroom Remodeling",
+      "slug": "bathroom-remodeling",
+      "icon": "🚿",
+      "description": "Bathroom renovation and remodeling services",
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.category",
+    "pk": 3,
+    "fields": {
+      "name": "Flooring",
+      "slug": "flooring",
+      "icon": "🏠",
+      "description": "Flooring installation and repair services",
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.category",
+    "pk": 4,
+    "fields": {
+      "name": "Electrical Work",
+      "slug": "electrical-work",
+      "icon": "⚡",
+      "description": "Electrical installation and repair services",
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.category",
+    "pk": 5,
+    "fields": {
+      "name": "Plumbing",
+      "slug": "plumbing",
+      "icon": "🔧",
+      "description": "Plumbing installation and repair services",
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.category",
+    "pk": 6,
+    "fields": {
+      "name": "Painting",
+      "slug": "painting",
+      "icon": "🎨",
+      "description": "Interior and exterior painting services",
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.category",
+    "pk": 7,
+    "fields": {
+      "name": "Roofing",
+      "slug": "roofing",
+      "icon": "🏘️",
+      "description": "Roofing installation and repair services",
+      "is_active": true
+    }
+  },
+  {
+    "model": "contractors.category",
+    "pk": 8,
+    "fields": {
+      "name": "HVAC",
+      "slug": "hvac",
+      "icon": "❄️",
+      "description": "Heating, ventilation, and air conditioning services",
+      "is_active": true
+    }
+  }
+]

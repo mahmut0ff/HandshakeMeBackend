@@ -1,0 +1,358 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Предварительный просмотр - {{ notification.title }} - HandshakeMe Админ-панель{% endblock %}
+
+{% block page_title %}Предварительный просмотр уведомления{% endblock %}
+
+{% block extra_css %}
+<style>
+.device-frame {
+    background: #333;
+    border-radius: 25px;
+    padding: 20px;
+    margin: 20px auto;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+}
+
+.device-screen {
+    background: #000;
+    border-radius: 15px;
+    padding: 15px;
+    min-height: 500px;
+    position: relative;
+    overflow: hidden;
+}
+
+.notification-item {
+    background: rgba(255,255,255,0.95);
+    border-radius: 12px;
+    padding: 15px;
+    margin: 10px 0;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.app-icon {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.device-selector {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.device-btn {
+    padding: 8px 16px;
+    border: 2px solid #dee2e6;
+    background: white;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.device-btn.active {
+    border-color: #007bff;
+    background: #007bff;
+    color: white;
+}
+
+.device-btn:hover {
+    border-color: #007bff;
+}
+
+/* Стили для разных устройств */
+.device-ios .device-frame {
+    max-width: 300px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.device-android .device-frame {
+    max-width: 320px;
+    background: #2c3e50;
+}
+
+.device-desktop .device-frame {
+    max-width: 400px;
+    background: #34495e;
+    border-radius: 8px;
+}
+
+.status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    font-size: 12px;
+    margin-bottom: 10px;
+    padding: 0 5px;
+}
+
+.notification-stats {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Селектор устройств -->
+        <div class="device-selector">
+            <button class="device-btn active" onclick="switchDevice('ios')">
+                <i class="bi bi-phone me-1"></i>
+                iOS
+            </button>
+            <button class="device-btn" onclick="switchDevice('android')">
+                <i class="bi bi-phone me-1"></i>
+                Android
+            </button>
+            <button class="device-btn" onclick="switchDevice('desktop')">
+                <i class="bi bi-laptop me-1"></i>
+                Desktop
+            </button>
+        </div>
+
+        <!-- Предварительный просмотр устройства -->
+        <div id="device-preview" class="device-ios">
+            <div class="device-frame">
+                <div class="device-screen">
+                    <!-- Статус бар -->
+                    <div class="status-bar">
+                        <span>9:41</span>
+                        <span>
+                            <i class="bi bi-wifi"></i>
+                            <i class="bi bi-battery-full"></i>
+                        </span>
+                    </div>
+
+                    <!-- Уведомление -->
+                    <div class="notification-item">
+                        <div class="d-flex align-items-start">
+                            <div class="app-icon me-3">
+                                HM
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <strong class="text-dark">HandshakeMe</strong>
+                                    <small class="text-muted">сейчас</small>
+                                </div>
+                                <div class="fw-bold text-dark mb-1">{{ notification.title }}</div>
+                                <div class="text-muted">{{ notification.message }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Дополнительные уведомления для контекста -->
+                    <div class="notification-item" style="opacity: 0.6;">
+                        <div class="d-flex align-items-start">
+                            <div style="width: 24px; height: 24px; background: #28a745; border-radius: 6px; margin-right: 12px;"></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <strong class="text-dark">WhatsApp</strong>
+                                    <small class="text-muted">5 мин</small>
+                                </div>
+                                <div class="text-muted">Новое сообщение</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="notification-item" style="opacity: 0.4;">
+                        <div class="d-flex align-items-start">
+                            <div style="width: 24px; height: 24px; background: #1da1f2; border-radius: 6px; margin-right: 12px;"></div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex justify-content-between align-items-start mb-1">
+                                    <strong class="text-dark">Telegram</strong>
+                                    <small class="text-muted">1 ч</small>
+                                </div>
+                                <div class="text-muted">Обновление канала</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Информация об уведомлении -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    Информация об уведомлении
+                </h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>Заголовок:</strong></td>
+                        <td>{{ notification.title }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Длина заголовка:</strong></td>
+                        <td>{{ notification.title|length }} символов</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Длина сообщения:</strong></td>
+                        <td>{{ notification.message|length }} символов</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Целевая аудитория:</strong></td>
+                        <td>{{ notification.get_target_audience_display }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Получателей:</strong></td>
+                        <td>{{ recipients_count }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Статистика предварительного просмотра -->
+        <div class="notification-stats">
+            <h6 class="mb-3">
+                <i class="bi bi-graph-up me-2"></i>
+                Рекомендации
+            </h6>
+            
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Длина заголовка</span>
+                    {% if notification.title|length <= 50 %}
+                        <span class="badge bg-success">Оптимально</span>
+                    {% elif notification.title|length <= 80 %}
+                        <span class="badge bg-warning">Приемлемо</span>
+                    {% else %}
+                        <span class="badge bg-danger">Слишком длинно</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted">Рекомендуется до 50 символов</small>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Длина сообщения</span>
+                    {% if notification.message|length <= 120 %}
+                        <span class="badge bg-success">Оптимально</span>
+                    {% elif notification.message|length <= 200 %}
+                        <span class="badge bg-warning">Приемлемо</span>
+                    {% else %}
+                        <span class="badge bg-danger">Слишком длинно</span>
+                    {% endif %}
+                </div>
+                <small class="text-muted">Рекомендуется до 120 символов</small>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Размер аудитории</span>
+                    {% if recipients_count > 0 %}
+                        <span class="badge bg-success">{{ recipients_count }}</span>
+                    {% else %}
+                        <span class="badge bg-warning">Нет получателей</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Действия -->
+        <div class="d-grid gap-2 mt-4">
+            {% if notification.status == 'draft' %}
+                <button class="btn btn-success" onclick="sendNotification()">
+                    <i class="bi bi-send me-1"></i>
+                    Отправить уведомление
+                </button>
+            {% endif %}
+            <a href="{% url 'admin_panel:push_notification_detail' notification.id %}" class="btn btn-outline-primary">
+                <i class="bi bi-eye me-1"></i>
+                Детали уведомления
+            </a>
+            <a href="{% url 'admin_panel:notifications' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>
+                Назад к списку
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function switchDevice(deviceType) {
+    // Обновляем активную кнопку
+    document.querySelectorAll('.device-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.classList.add('active');
+    
+    // Обновляем класс устройства
+    const preview = document.getElementById('device-preview');
+    preview.className = `device-${deviceType}`;
+    
+    // Анимация переключения
+    preview.style.opacity = '0.5';
+    setTimeout(() => {
+        preview.style.opacity = '1';
+    }, 150);
+}
+
+function sendNotification() {
+    if (confirm('Отправить уведомление сейчас?')) {
+        fetch(`/admin-panel/notifications/{{ notification.id }}/send/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Уведомление отправлено!');
+                window.location.href = '{% url "admin_panel:notifications" %}';
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при отправке');
+        });
+    }
+}
+
+// Добавляем CSRF токен если его нет
+if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+    const csrfInput = document.createElement('input');
+    csrfInput.type = 'hidden';
+    csrfInput.name = 'csrfmiddlewaretoken';
+    csrfInput.value = '{{ csrf_token }}';
+    document.body.appendChild(csrfInput);
+}
+</script>
+{% endblock %}

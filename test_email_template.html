@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Тестовое письмо - {{site_name}}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; }
+        .header { background: #007bff; color: white; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { padding: 20px; }
+        .footer { background: #f8f9fa; padding: 15px; text-align: center; border-radius: 0 0 8px 8px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{site_name}}</h1>
+            <p>Тестовое письмо</p>
+        </div>
+        <div class="content">
+            <h2>Привет, {{user_name}}!</h2>
+            <p>Это тестовое письмо из админ-панели {{site_name}}.</p>
+            <p><strong>Детали:</strong></p>
+            <ul>
+                <li>Email: {{user_email}}</li>
+                <li>Дата отправки: {{current_date}} в {{current_time}}</li>
+                <li>Отправил: {{admin_name}}</li>
+            </ul>
+            <p>Если вы получили это письмо, значит система email работает корректно! 🎉</p>
+        </div>
+        <div class="footer">
+            <p>С уважением,<br>Команда {{site_name}}</p>
+            <p><small>Это автоматическое письмо, не отвечайте на него.</small></p>
+        </div>
+    </div>
+</body>
+</html>

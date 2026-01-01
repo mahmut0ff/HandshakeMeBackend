@@ -1,0 +1,177 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Мой профиль - HandshakeMe Админ-панель{% endblock %}
+
+{% block page_title %}Мой профиль{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-person me-2"></i>
+                    Информация о профиле
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center mb-4">
+                    <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center mx-auto mb-3" style="width: 80px; height: 80px; font-size: 32px;">
+                        {{ user.first_name.0|default:user.email.0|upper }}
+                    </div>
+                    <h4>{{ user.get_full_name|default:user.email }}</h4>
+                    <span class="badge bg-primary fs-6">{{ user.admin_role.get_role_display }}</span>
+                </div>
+                
+                <table class="table table-borderless">
+                    <tr>
+                        <th width="30%">Email:</th>
+                        <td>{{ user.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Имя:</th>
+                        <td>{{ user.first_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Фамилия:</th>
+                        <td>{{ user.last_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Роль:</th>
+                        <td>{{ user.admin_role.get_role_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>Дата создания:</th>
+                        <td>{{ user.admin_role.created_at|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                    <tr>
+                        <th>Последний вход:</th>
+                        <td>{{ user.last_login|date:"d.m.Y H:i" }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-check me-2"></i>
+                    Права доступа
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Ваши права:</h6>
+                    <ul class="list-unstyled">
+                        {% if user.admin_role.role == 'superadmin' %}
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Полный доступ ко всем функциям</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Управление администраторами</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Системные настройки</li>
+                        {% elif user.admin_role.role == 'admin' %}
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Управление пользователями</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Модерация контента</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Обработка жалоб</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Email рассылки</li>
+                        {% elif user.admin_role.role == 'moderator' %}
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Просмотр пользователей</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Модерация контента</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Обработка жалоб</li>
+                        {% elif user.admin_role.role == 'support' %}
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Просмотр пользователей</li>
+                            <li><i class="bi bi-check-circle text-success me-2"></i>Просмотр жалоб</li>
+                        {% else %}
+                            <li><i class="bi bi-eye text-info me-2"></i>Только просмотр данных</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-clock-history me-2"></i>
+                    Мои последние действия
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if recent_actions %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Действие</th>
+                                    <th>Описание</th>
+                                    <th>Время</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for action in recent_actions %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ action.get_action_display }}</span>
+                                    </td>
+                                    <td>{{ action.description|truncatechars:30 }}</td>
+                                    <td>{{ action.timestamp|timesince }} назад</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">Нет данных о действиях</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    История входов
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if login_history %}
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>IP адрес</th>
+                                    <th>Статус</th>
+                                    <th>Время</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for login in login_history %}
+                                <tr>
+                                    <td>{{ login.ip_address }}</td>
+                                    <td>
+                                        {% if login.success %}
+                                            <span class="badge bg-success">Успешно</span>
+                                        {% else %}
+                                            <span class="badge bg-danger">Неудачно</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ login.timestamp|timesince }} назад</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center">Нет данных о входах</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

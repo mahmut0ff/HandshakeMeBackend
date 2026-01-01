@@ -1,0 +1,154 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Предварительный просмотр: {{ template.name }} - HandshakeMe Admin{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Предварительный просмотр</h1>
+        <p class="text-muted">{{ template.name }} ({{ template.get_template_type_display }})</p>
+    </div>
+    <div>
+        <a href="{% url 'admin_panel:email_template_edit' template.id %}" class="btn btn-outline-primary me-2">
+            <i class="bi bi-pencil me-2"></i>Редактировать
+        </a>
+        <a href="{% url 'admin_panel:email_templates' %}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Назад к списку
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Предварительный просмотр письма</h5>
+            </div>
+            <div class="card-body">
+                <!-- Email Header -->
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="row">
+                        <div class="col-sm-3 text-muted">От:</div>
+                        <div class="col-sm-9">HandshakeMe &lt;noreply@handshakeme.com&gt;</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3 text-muted">Кому:</div>
+                        <div class="col-sm-9">{{ test_data.user_name }} &lt;{{ test_data.user_email }}&gt;</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3 text-muted">Тема:</div>
+                        <div class="col-sm-9"><strong>{{ preview_subject }}</strong></div>
+                    </div>
+                </div>
+                
+                <!-- Email Content -->
+                <div class="email-preview" style="border: 1px solid #dee2e6; padding: 20px; background: white;">
+                    {{ preview_html|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Информация о шаблоне</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Название:</dt>
+                    <dd class="col-sm-7">{{ template.name }}</dd>
+                    
+                    <dt class="col-sm-5">Тип:</dt>
+                    <dd class="col-sm-7">{{ template.get_template_type_display }}</dd>
+                    
+                    <dt class="col-sm-5">Статус:</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge bg-{{ template.is_active|yesno:'success,secondary' }}">
+                            {{ template.is_active|yesno:'Активен,Неактивен' }}
+                        </span>
+                    </dd>
+                    
+                    <dt class="col-sm-5">Создан:</dt>
+                    <dd class="col-sm-7">{{ template.created_at|date:"d.m.Y H:i" }}</dd>
+                    
+                    <dt class="col-sm-5">Обновлен:</dt>
+                    <dd class="col-sm-7">{{ template.updated_at|date:"d.m.Y H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Тестовые данные</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-2">
+                    Для предварительного просмотра используются следующие тестовые данные:
+                </p>
+                <dl class="row small">
+                    {% for key, value in test_data.items %}
+                    <dt class="col-sm-6">{{ key }}:</dt>
+                    <dd class="col-sm-6">{{ value }}</dd>
+                    {% endfor %}
+                </dl>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Действия</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-primary btn-sm" onclick="window.print()">
+                        <i class="bi bi-printer me-2"></i>Печать
+                    </button>
+                    <button class="btn btn-outline-info btn-sm" onclick="sendTestEmail()">
+                        <i class="bi bi-send me-2"></i>Отправить тест
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sendTestEmail() {
+    const email = prompt('Введите email для отправки тестового письма:');
+    if (email && validateEmail(email)) {
+        // Отправляем AJAX запрос
+        fetch('/admin-panel/email/send-test/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `template_id={{ template.id }}&test_email=${encodeURIComponent(email)}`
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ ' + data.message);
+            } else {
+                alert('❌ Ошибка: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('❌ Произошла ошибка при отправке тестового письма');
+        });
+    } else if (email) {
+        alert('❌ Пожалуйста, введите корректный email адрес');
+    }
+}
+
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Доступ запрещен - HandshakeMe{% endblock %}
+
+{% block page_title %}Ошибка доступа{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="text-center">
+                <div class="mb-4">
+                    <i class="bi bi-shield-exclamation text-danger" style="font-size: 5rem;"></i>
+                </div>
+                
+                <h1 class="display-4 text-danger mb-3">403</h1>
+                <h2 class="h3 mb-4">Доступ запрещен</h2>
+                
+                <div class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    {{ error_message|default:"У вас нет прав для доступа к этой странице" }}
+                </div>
+                
+                <div class="mb-4">
+                    <p class="text-muted">
+                        Если вы считаете, что это ошибка, обратитесь к системному администратору.
+                    </p>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <a href="{% url 'admin_panel:dashboard' %}" class="btn btn-primary">
+                        <i class="bi bi-house me-2"></i>
+                        На главную
+                    </a>
+                    
+                    <button onclick="history.back()" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-2"></i>
+                        Назад
+                    </button>
+                </div>
+                
+                {% if user.is_authenticated %}
+                <div class="mt-4 p-3 bg-light rounded">
+                    <small class="text-muted">
+                        <strong>Ваша роль:</strong> {{ user.admin_role.get_role_display }}<br>
+                        <strong>Email:</strong> {{ user.email }}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

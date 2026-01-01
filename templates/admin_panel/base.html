@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="ru" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}HandshakeMe - Админ-панель{% endblock %}</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --header-height: 80px;
+            --primary-color: #6366f1;
+            --sidebar-bg: #1e293b;
+            --sidebar-hover: #334155;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --card-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            width: var(--sidebar-width);
+            background: var(--sidebar-bg);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            border-right: 1px solid #334155;
+            overflow-y: auto;
+        }
+        
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+            background-color: #f8fafc;
+        }
+        
+        .main-content.expanded {
+            margin-left: 0;
+        }
+        
+        .sidebar-brand {
+            padding: 1.5rem 1.5rem 1rem 1.5rem;
+            border-bottom: 1px solid #334155;
+            margin-bottom: 1rem;
+        }
+        
+        .navbar-brand {
+            color: white !important;
+            font-weight: 700;
+            font-size: 1.25rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+        
+        .navbar-brand i {
+            font-size: 1.5rem;
+            margin-right: 0.75rem;
+        }
+        
+        .sidebar-nav {
+            padding: 0 1rem 2rem 1rem;
+        }
+        
+        .nav-link {
+            color: #94a3b8 !important;
+            padding: 0.875rem 1rem;
+            border-radius: 8px;
+            margin: 0.125rem 0;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+        }
+        
+        .nav-link:hover {
+            color: white !important;
+            background-color: var(--sidebar-hover);
+            transform: translateX(4px);
+        }
+        
+        .nav-link.active {
+            color: white !important;
+            background-color: var(--primary-color);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        
+        .nav-link i {
+            width: 20px;
+            margin-right: 0.875rem;
+            font-size: 1.1rem;
+            text-align: center;
+        }
+        
+        .header {
+            height: var(--header-height);
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--card-shadow);
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .content-wrapper {
+            padding: 2rem;
+            min-height: calc(100vh - var(--header-height));
+            background-color: #f8fafc;
+        }
+        
+        .page-header {
+            margin-bottom: 2rem;
+        }
+        
+        .page-title {
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0;
+        }
+        
+        .breadcrumb {
+            background: none;
+            padding: 0;
+            margin: 0.5rem 0 0 0;
+            font-size: 0.875rem;
+        }
+        
+        .breadcrumb-item {
+            color: var(--text-muted);
+        }
+        
+        .breadcrumb-item a {
+            color: var(--text-muted);
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item a:hover {
+            color: var(--primary-color);
+        }
+        
+        .breadcrumb-item.active {
+            color: #1e293b;
+        }
+        
+        .card {
+            border: none;
+            box-shadow: var(--card-shadow);
+            border-radius: 12px;
+            background: white;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-header {
+            background: white;
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 1.5rem;
+            border-radius: 12px 12px 0 0 !important;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .card-body {
+            padding: 1.5rem;
+        }
+        
+        .stats-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease;
+            height: 100%;
+        }
+        
+        .stats-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stats-card.primary {
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .stats-card.success {
+            border-left: 4px solid #10b981;
+        }
+        
+        .stats-card.warning {
+            border-left: 4px solid #f59e0b;
+        }
+        
+        .stats-card.danger {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .stats-number {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin: 0;
+            color: #1e293b;
+        }
+        
+        .stats-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin: 0.25rem 0 0 0;
+            font-weight: 500;
+        }
+        
+        .stats-change {
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-top: 0.5rem;
+        }
+        
+        .stats-change.positive {
+            color: #10b981;
+        }
+        
+        .stats-change.negative {
+            color: #ef4444;
+        }
+        
+        .stats-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            color: white;
+        }
+        
+        .stats-icon.primary {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+        
+        .stats-icon.success {
+            background: linear-gradient(135deg, #10b981, #047857);
+        }
+        
+        .stats-icon.warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+        }
+        
+        .stats-icon.danger {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        
+        .btn {
+            border-radius: 8px;
+            font-weight: 500;
+            padding: 0.625rem 1.25rem;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            font-size: 0.875rem;
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5b21b6;
+            border-color: #5b21b6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+        
+        .btn-outline-primary {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+        
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-sm {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.75rem;
+        }
+        
+        .table {
+            border-collapse: separate;
+            border-spacing: 0;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
+        }
+        
+        .table th {
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #64748b;
+            padding: 1rem 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            white-space: nowrap;
+        }
+        
+        .table td {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+            color: #1e293b;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8fafc;
+        }
+        
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .badge {
+            font-weight: 500;
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+        
+        .badge-primary {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .badge-success {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .badge-secondary {
+            background: #f1f5f9;
+            color: #475569;
+        }
+        
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .avatar-sm {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .avatar-lg {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .theme-toggle {
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+            color: var(--text-muted);
+        }
+        
+        .theme-toggle:hover {
+            background-color: #f1f5f9;
+            color: #1e293b;
+        }
+        
+        .dropdown-toggle::after {
+            margin-left: 0.5rem;
+        }
+        
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            padding: 0.5rem 0;
+            min-width: 200px;
+        }
+        
+        .dropdown-item {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.875rem;
+            transition: background-color 0.2s ease;
+            color: #374151;
+            display: flex;
+            align-items: center;
+        }
+        
+        .dropdown-item:hover {
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        .dropdown-item i {
+            margin-right: 0.75rem;
+            width: 16px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: background-color 0.2s ease;
+            text-decoration: none;
+            color: #374151;
+        }
+        
+        .user-info:hover {
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        .user-details {
+            margin-left: 0.75rem;
+            text-align: left;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin: 0;
+            color: #1e293b;
+        }
+        
+        .user-role {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .content-wrapper {
+                padding: 1rem;
+            }
+            
+            .stats-card {
+                margin-bottom: 1rem;
+            }
+            
+            .page-title {
+                font-size: 1.5rem;
+            }
+            
+            .header {
+                padding: 0 1rem;
+            }
+        }
+        [data-bs-theme="dark"] {
+            --bs-body-bg: #0f172a;
+            --bs-body-color: #e2e8f0;
+        }
+        
+        [data-bs-theme="dark"] body {
+            background-color: #0f172a;
+        }
+        
+        [data-bs-theme="dark"] .content-wrapper {
+            background-color: #0f172a;
+        }
+        
+        [data-bs-theme="dark"] .header {
+            background: #1e293b;
+            border-bottom-color: #334155;
+        }
+        
+        [data-bs-theme="dark"] .card {
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        
+        [data-bs-theme="dark"] .card-header {
+            background: #1e293b;
+            border-bottom-color: #334155;
+        }
+        
+        [data-bs-theme="dark"] .table th {
+            background: #0f172a;
+            color: #94a3b8;
+        }
+        
+        [data-bs-theme="dark"] .table td {
+            border-bottom-color: #334155;
+        }
+        
+        [data-bs-theme="dark"] .table tbody tr:hover {
+            background-color: #334155;
+        }
+        
+        [data-bs-theme="dark"] .stats-card {
+            background: #1e293b;
+        }
+        
+        [data-bs-theme="dark"] .page-title {
+            color: #e2e8f0;
+        }
+        
+        [data-bs-theme="dark"] .theme-toggle:hover {
+            background-color: #334155;
+            color: #e2e8f0;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    {% if user.is_authenticated %}
+    <!-- Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-brand">
+            <a class="navbar-brand" href="{% url 'admin_panel:dashboard' %}">
+                <i class="bi bi-shield-check"></i>
+                Admin Panel
+            </a>
+        </div>
+        
+        <div class="sidebar-nav">
+            <ul class="nav nav-pills flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" 
+                       href="{% url 'admin_panel:dashboard' %}">
+                        <i class="bi bi-speedometer2"></i>
+                        Dashboard
+                    </a>
+                </li>
+                
+                {% if user.admin_role.role in 'superadmin,admin,moderator,support' %}
+                <li class="nav-item">
+                    <a class="nav-link {% if 'users' in request.path %}active{% endif %}" 
+                       href="{% url 'admin_panel:users' %}">
+                        <i class="bi bi-people"></i>
+                        Users
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if user.admin_role.role in 'superadmin,admin,moderator' %}
+                <li class="nav-item">
+                    <a class="nav-link {% if 'moderation' in request.path %}active{% endif %}" 
+                       href="{% url 'admin_panel:moderation' %}">
+                        <i class="bi bi-shield-exclamation"></i>
+                        Moderation
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link {% if 'complaints' in request.path %}active{% endif %}" 
+                       href="{% url 'admin_panel:complaints' %}">
+                        <i class="bi bi-flag"></i>
+                        Complaints
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if user.admin_role.role in 'superadmin,admin' %}
+                <li class="nav-item">
+                    <a class="nav-link {% if 'email' in request.path %}active{% endif %}" 
+                       href="{% url 'admin_panel:email_templates' %}">
+                        <i class="bi bi-envelope"></i>
+                        Email
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link {% if 'notifications' in request.path %}active{% endif %}" 
+                       href="{% url 'admin_panel:notifications' %}">
+                        <i class="bi bi-bell"></i>
+                        Notifications
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link {% if 'banners' in request.path %}active{% endif %}" 
+                       href="{% url 'admin_panel:banners' %}">
+                        <i class="bi bi-image"></i>
+                        Banners
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link {% if 'chats' in request.path %}active{% endif %}" 
+                       href="{% url 'admin_panel:chats' %}">
+                        <i class="bi bi-chat-dots"></i>
+                        Chats
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% if user.admin_role.role == 'superadmin' %}
+                <li class="nav-item">
+                    <a class="nav-link {% if 'settings' in request.path %}active{% endif %}" 
+                       href="{% url 'admin_panel:settings' %}">
+                        <i class="bi bi-gear"></i>
+                        Settings
+                    </a>
+                </li>
+                
+                <li class="nav-item">
+                    <a class="nav-link {% if 'audit' in request.path %}active{% endif %}" 
+                       href="{% url 'admin_panel:audit_logs' %}">
+                        <i class="bi bi-journal-text"></i>
+                        Audit Logs
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Header -->
+        <header class="header">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-link d-md-none p-2 me-2" id="sidebarToggle">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+                
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb">
+                        <li class="breadcrumb-item"><a href="{% url 'admin_panel:dashboard' %}">Home</a></li>
+                        {% block breadcrumb %}{% endblock %}
+                    </ol>
+                </nav>
+            </div>
+            
+            <div class="d-flex align-items-center">
+                <div class="theme-toggle me-3" id="themeToggle">
+                    <i class="bi bi-sun-fill" id="themeIcon"></i>
+                </div>
+                
+                <div class="dropdown">
+                    <button class="btn btn-link dropdown-toggle user-info p-0" 
+                            type="button" data-bs-toggle="dropdown">
+                        <img src="https://ui-avatars.com/api/?name={{ user.get_full_name|default:user.email|urlencode }}&background=6366f1&color=fff&size=32" 
+                             alt="Avatar" class="avatar">
+                        <div class="user-details d-none d-md-block">
+                            <div class="user-name">{{ user.get_full_name|default:user.email }}</div>
+                            <div class="user-role">{{ user.admin_role.get_role_display }}</div>
+                        </div>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" href="{% url 'admin_panel:profile' %}">
+                            <i class="bi bi-person"></i>Profile
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'admin_panel:logout' %}">
+                            <i class="bi bi-box-arrow-right"></i>Logout
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Content -->
+        <main class="content-wrapper">
+            <div class="page-header">
+                <h1 class="page-title">{% block page_title %}Admin Panel{% endblock %}</h1>
+            </div>
+            
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+            
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+    {% else %}
+        {% block login_content %}{% endblock %}
+    {% endif %}
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Sidebar toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+            const sidebarCollapseToggle = document.getElementById('sidebarCollapseToggle');
+            const themeToggle = document.getElementById('themeToggle');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            // Mobile sidebar toggle
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('show');
+                });
+            }
+            
+            // Desktop sidebar collapse
+            if (sidebarCollapseToggle) {
+                sidebarCollapseToggle.addEventListener('click', function() {
+                    sidebar.classList.toggle('collapsed');
+                    mainContent.classList.toggle('expanded');
+                });
+            }
+            
+            // Theme toggle
+            if (themeToggle) {
+                const currentTheme = localStorage.getItem('theme') || 'light';
+                document.documentElement.setAttribute('data-bs-theme', currentTheme);
+                updateThemeIcon(currentTheme);
+                
+                themeToggle.addEventListener('click', function() {
+                    const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+                    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+                    
+                    document.documentElement.setAttribute('data-bs-theme', newTheme);
+                    localStorage.setItem('theme', newTheme);
+                    updateThemeIcon(newTheme);
+                });
+            }
+            
+            function updateThemeIcon(theme) {
+                if (themeIcon) {
+                    themeIcon.className = theme === 'dark' ? 'bi bi-moon-fill' : 'bi bi-sun-fill';
+                }
+            }
+            
+            // Close mobile sidebar when clicking outside
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth <= 768) {
+                    if (!sidebar.contains(event.target) && !sidebarToggle.contains(event.target)) {
+                        sidebar.classList.remove('show');
+                    }
+                }
+            });
+        });
+        
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            const alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

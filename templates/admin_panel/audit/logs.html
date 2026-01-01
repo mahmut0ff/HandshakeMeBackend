@@ -1,0 +1,171 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Журнал аудита - HandshakeMe Админ-панель{% endblock %}
+
+{% block page_title %}Журнал аудита{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-funnel me-2"></i>
+                    Фильтры
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="action" class="form-label">Действие</label>
+                        <select name="action" class="form-select">
+                            <option value="">Все действия</option>
+                            {% for value, label in action_choices %}
+                                <option value="{{ value }}" {% if request.GET.action == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="admin_user" class="form-label">Администратор</label>
+                        <select name="admin_user" class="form-select">
+                            <option value="">Все администраторы</option>
+                            {% for admin in admin_users %}
+                                <option value="{{ admin.id }}" {% if request.GET.admin_user == admin.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ admin.get_full_name|default:admin.email }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_from" class="form-label">Дата с</label>
+                        <input type="date" name="date_from" class="form-control" value="{{ request.GET.date_from }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_to" class="form-label">Дата по</label>
+                        <input type="date" name="date_to" class="form-control" value="{{ request.GET.date_to }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search me-1"></i>
+                            Поиск
+                        </button>
+                        <a href="{% url 'admin_panel:audit_logs' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Сброс
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-journal-text me-2"></i>
+                    Логи действий ({{ page_obj.paginator.count }})
+                </h5>
+                <button class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-download me-1"></i>
+                    Экспорт CSV
+                </button>
+            </div>
+            <div class="card-body p-0">
+                {% if logs %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Время</th>
+                                    <th>Администратор</th>
+                                    <th>Действие</th>
+                                    <th>Описание</th>
+                                    <th>IP адрес</th>
+                                    <th>Объект</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for log in logs %}
+                                <tr>
+                                    <td>
+                                        <small>{{ log.timestamp|date:"d.m.Y H:i:s" }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 24px; height: 24px; font-size: 10px;">
+                                                {{ log.admin_user.first_name.0|default:log.admin_user.email.0|upper }}
+                                            </div>
+                                            <small>{{ log.admin_user.get_full_name|default:log.admin_user.email }}</small>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ log.get_action_display }}</span>
+                                    </td>
+                                    <td>
+                                        <div style="max-width: 300px;">
+                                            {{ log.description|truncatechars:80 }}
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <small class="text-muted">{{ log.ip_address }}</small>
+                                    </td>
+                                    <td>
+                                        {% if log.content_type %}
+                                            <small class="text-muted">
+                                                {{ log.content_type.model|title }} #{{ log.object_id }}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Пагинация -->
+                    {% if page_obj.has_other_pages %}
+                        <div class="card-footer">
+                            <nav aria-label="Пагинация логов">
+                                <ul class="pagination justify-content-center mb-0">
+                                    {% if page_obj.has_previous %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page=1{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.admin_user %}&admin_user={{ request.GET.admin_user }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">Первая</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.admin_user %}&admin_user={{ request.GET.admin_user }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">Предыдущая</a>
+                                        </li>
+                                    {% endif %}
+                                    
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</span>
+                                    </li>
+                                    
+                                    {% if page_obj.has_next %}
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.admin_user %}&admin_user={{ request.GET.admin_user }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">Следующая</a>
+                                        </li>
+                                        <li class="page-item">
+                                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.admin_user %}&admin_user={{ request.GET.admin_user }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}">Последняя</a>
+                                        </li>
+                                    {% endif %}
+                                </ul>
+                            </nav>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-journal-text fs-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">Логи не найдены</h5>
+                        <p class="text-muted">Попробуйте изменить параметры поиска</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

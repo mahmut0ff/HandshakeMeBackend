@@ -1,0 +1,445 @@
+{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block title %}Жалобы - HandshakeMe Админ-панель{% endblock %}
+
+{% block page_title %}Управление жалобами{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<!-- Статистика жалоб -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Ожидают рассмотрения</h6>
+                        <h3 class="mb-0">{{ stats.pending_count }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-clock-history fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">В работе</h6>
+                        <h3 class="mb-0">{{ stats.in_review_count }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-gear fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Решены</h6>
+                        <h3 class="mb-0">{{ stats.resolved_count }}</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-check-circle fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Среднее время</h6>
+                        <h3 class="mb-0">{{ stats.avg_processing_time|floatformat:1 }}ч</h3>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-stopwatch fs-2"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-funnel me-2"></i>
+                    Фильтры
+                </h5>
+            </div>
+            <div class="card-body">
+                <form method="get" class="row g-3">
+                    <div class="col-md-2">
+                        <label for="status" class="form-label">Статус</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="">Все статусы</option>
+                            {% for value, label in status_choices %}
+                                <option value="{{ value }}" {% if current_filters.status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="complaint_type" class="form-label">Тип жалобы</label>
+                        <select name="complaint_type" id="complaint_type" class="form-select">
+                            <option value="">Все типы</option>
+                            {% for value, label in complaint_type_choices %}
+                                <option value="{{ value }}" {% if current_filters.complaint_type == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="assigned_to" class="form-label">Назначено</label>
+                        <select name="assigned_to" id="assigned_to" class="form-select">
+                            <option value="">Все модераторы</option>
+                            <option value="unassigned" {% if current_filters.assigned_to == 'unassigned' %}selected{% endif %}>Без назначения</option>
+                            <option value="me" {% if current_filters.assigned_to == 'me' %}selected{% endif %}>Мне</option>
+                            {% for moderator in moderators %}
+                                <option value="{{ moderator.id }}" {% if current_filters.assigned_to == moderator.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ moderator.get_full_name|default:moderator.email }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="priority" class="form-label">Приоритет</label>
+                        <select name="priority" id="priority" class="form-select">
+                            <option value="">Все приоритеты</option>
+                            <option value="high" {% if current_filters.priority == 'high' %}selected{% endif %}>Высокий</option>
+                            <option value="normal" {% if current_filters.priority == 'normal' %}selected{% endif %}>Обычный</option>
+                            <option value="low" {% if current_filters.priority == 'low' %}selected{% endif %}>Низкий</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_range" class="form-label">Период</label>
+                        <select name="date_range" id="date_range" class="form-select">
+                            <option value="">Все время</option>
+                            <option value="today" {% if current_filters.date_range == 'today' %}selected{% endif %}>Сегодня</option>
+                            <option value="week" {% if current_filters.date_range == 'week' %}selected{% endif %}>Неделя</option>
+                            <option value="month" {% if current_filters.date_range == 'month' %}selected{% endif %}>Месяц</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">
+                            <i class="bi bi-search me-1"></i>
+                            Применить
+                        </button>
+                        <a href="{% url 'admin_panel:complaints' %}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-circle me-1"></i>
+                            Сброс
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Массовые действия -->
+<div class="row mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="selectAll">
+                        <label class="form-check-label" for="selectAll">
+                            Выбрать все
+                        </label>
+                    </div>
+                    <div class="btn-group" id="bulkActions" style="display: none;">
+                        <button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-gear me-1"></i>
+                            Массовые действия
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="bulkAssign('auto')">
+                                <i class="bi bi-shuffle me-2"></i>Автоназначение
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            {% for moderator in moderators %}
+                            <li><a class="dropdown-item" href="#" onclick="bulkAssign({{ moderator.id }})">
+                                <i class="bi bi-person me-2"></i>{{ moderator.get_full_name|default:moderator.email }}
+                            </a></li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-flag me-2"></i>
+                    Жалобы
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if complaints %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th width="40">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="selectAllTable">
+                                        </div>
+                                    </th>
+                                    <th>Заявитель</th>
+                                    <th>Тип</th>
+                                    <th>Статус</th>
+                                    <th>Назначено</th>
+                                    <th>Дата</th>
+                                    <th>Время обработки</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for complaint in complaints %}
+                                <tr>
+                                    <td>
+                                        <div class="form-check">
+                                            <input class="form-check-input complaint-checkbox" type="checkbox" 
+                                                   value="{{ complaint.id }}" name="complaint_ids">
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div>
+                                                <div class="fw-bold">{{ complaint.complainant.get_full_name|default:complaint.complainant.email }}</div>
+                                                <small class="text-muted">{{ complaint.complainant.email }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ complaint.get_complaint_type_display }}</span>
+                                    </td>
+                                    <td>
+                                        {% if complaint.status == 'pending' %}
+                                            <span class="badge bg-warning">{{ complaint.get_status_display }}</span>
+                                        {% elif complaint.status == 'in_review' %}
+                                            <span class="badge bg-info">{{ complaint.get_status_display }}</span>
+                                        {% elif complaint.status == 'resolved' %}
+                                            <span class="badge bg-success">{{ complaint.get_status_display }}</span>
+                                        {% elif complaint.status == 'rejected' %}
+                                            <span class="badge bg-danger">{{ complaint.get_status_display }}</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ complaint.get_status_display }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if complaint.assigned_to %}
+                                            <div class="d-flex align-items-center">
+                                                <i class="bi bi-person-circle me-1"></i>
+                                                <small>{{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.email }}</small>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">Не назначено</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div>{{ complaint.created_at|date:"d.m.Y H:i" }}</div>
+                                        <small class="text-muted">{{ complaint.created_at|timesince }} назад</small>
+                                    </td>
+                                    <td>
+                                        {% if complaint.resolved_at %}
+                                            <span class="badge bg-light text-dark">Завершено</span>
+                                        {% else %}
+                                            <span class="text-muted">В процессе</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'admin_panel:complaint_detail' complaint.id %}" 
+                                               class="btn btn-outline-primary" title="Просмотр">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            {% if complaint.status == 'pending' %}
+                                                <button class="btn btn-outline-success" 
+                                                        onclick="quickAssign('{{ complaint.id }}', 'me')" 
+                                                        title="Взять в работу">
+                                                    <i class="bi bi-hand-thumbs-up"></i>
+                                                </button>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Пагинация -->
+                    {% if page_obj.has_other_pages %}
+                    <nav aria-label="Пагинация жалоб" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if page_obj.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page=1">
+                                        <i class="bi bi-chevron-double-left"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.previous_page_number }}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in page_obj.paginator.page_range %}
+                                {% if page_obj.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if page_obj.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.next_page_number }}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ page_obj.paginator.num_pages }}">
+                                        <i class="bi bi-chevron-double-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-flag fs-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">Жалобы не найдены</h5>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const selectAllTableCheckbox = document.getElementById('selectAllTable');
+    const complaintCheckboxes = document.querySelectorAll('.complaint-checkbox');
+    const bulkActionsDiv = document.getElementById('bulkActions');
+    
+    // Синхронизация чекбоксов "выбрать все"
+    function syncSelectAll() {
+        const checkedCount = document.querySelectorAll('.complaint-checkbox:checked').length;
+        const totalCount = complaintCheckboxes.length;
+        
+        selectAllCheckbox.checked = checkedCount === totalCount && totalCount > 0;
+        selectAllTableCheckbox.checked = checkedCount === totalCount && totalCount > 0;
+        selectAllCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+        selectAllTableCheckbox.indeterminate = checkedCount > 0 && checkedCount < totalCount;
+        
+        // Показать/скрыть массовые действия
+        bulkActionsDiv.style.display = checkedCount > 0 ? 'block' : 'none';
+    }
+    
+    // Обработчики для чекбоксов "выбрать все"
+    [selectAllCheckbox, selectAllTableCheckbox].forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            complaintCheckboxes.forEach(cb => {
+                cb.checked = this.checked;
+            });
+            syncSelectAll();
+        });
+    });
+    
+    // Обработчики для индивидуальных чекбоксов
+    complaintCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', syncSelectAll);
+    });
+    
+    // Инициализация
+    syncSelectAll();
+});
+
+// Функция массового назначения
+function bulkAssign(assigneeId) {
+    const checkedBoxes = document.querySelectorAll('.complaint-checkbox:checked');
+    const complaintIds = Array.from(checkedBoxes).map(cb => cb.value);
+    
+    if (complaintIds.length === 0) {
+        alert('Выберите жалобы для назначения');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('assignee_id', assigneeId);
+    complaintIds.forEach(id => formData.append('complaint_ids', id));
+    
+    fetch('{% url "admin_panel:complaint_bulk_assign" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при назначении жалоб');
+    });
+}
+
+// Функция быстрого назначения
+function quickAssign(complaintId, assigneeId) {
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('assignee_id', assigneeId === 'me' ? '{{ request.user.id }}' : assigneeId);
+    formData.append('complaint_ids', complaintId);
+    
+    fetch('{% url "admin_panel:complaint_bulk_assign" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Произошла ошибка при назначении жалобы');
+    });
+}
+</script>
+{% endblock %}

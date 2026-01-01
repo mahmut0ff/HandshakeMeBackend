@@ -1,0 +1,99 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}{{ title }} - HandshakeMe Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">{{ title }}</h1>
+    <a href="{% url 'admin_panel:email_campaigns' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Назад к списку
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Название кампании</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                        <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Тема письма</label>
+                        {{ form.subject }}
+                        {% if form.subject.errors %}
+                        <div class="text-danger small">{{ form.subject.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Email шаблон</label>
+                            {{ form.template }}
+                            {% if form.template.errors %}
+                            <div class="text-danger small">{{ form.template.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Целевая аудитория</label>
+                            {{ form.target_audience }}
+                            {% if form.target_audience.errors %}
+                            <div class="text-danger small">{{ form.target_audience.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Запланировать отправку (опционально)</label>
+                        {{ form.scheduled_at }}
+                        {% if form.scheduled_at.errors %}
+                        <div class="text-danger small">{{ form.scheduled_at.errors.0 }}</div>
+                        {% endif %}
+                        <div class="form-text">
+                            Оставьте пустым для отправки вручную
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-floppy me-2"></i>Сохранить кампанию
+                        </button>
+                        <a href="{% url 'admin_panel:email_campaigns' %}" class="btn btn-outline-secondary">
+                            Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6>Информация</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">
+                    Email кампания позволяет отправить массовую рассылку выбранной аудитории 
+                    используя готовый шаблон.
+                </p>
+                <hr>
+                <h6 class="small">Типы аудитории:</h6>
+                <ul class="small">
+                    <li><strong>Все пользователи</strong> - всем активным пользователям</li>
+                    <li><strong>Активные пользователи</strong> - заходившим за последний месяц</li>
+                    <li><strong>Подрядчики</strong> - только подрядчикам</li>
+                    <li><strong>Клиенты</strong> - только клиентам</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

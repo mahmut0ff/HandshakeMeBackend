@@ -1,0 +1,169 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Шаблоны сообщений - HandshakeMe Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Шаблоны системных сообщений</h1>
+        <p class="text-muted">Управление шаблонами для отправки в чаты</p>
+    </div>
+    <a href="{% url 'admin_panel:message_template_create' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-2"></i>Создать шаблон
+    </a>
+</div>
+
+<!-- Статистика -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-primary">{{ stats.total_templates }}</h5>
+                <p class="card-text small">Всего шаблонов</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-success">{{ stats.active_templates }}</h5>
+                <p class="card-text small">Активные</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-center">
+            <div class="card-body">
+                <h5 class="card-title text-info">
+                    {% if stats.most_used %}{{ stats.most_used.usage_count }}{% else %}0{% endif %}
+                </h5>
+                <p class="card-text small">
+                    {% if stats.most_used %}{{ stats.most_used.name }}{% else %}Нет использований{% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Фильтры -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Поиск</label>
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Поиск по названию или содержимому..." 
+                       value="{{ current_filters.search }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Категория</label>
+                <select name="category" class="form-select">
+                    <option value="">Все категории</option>
+                    {% for value, label in categories %}
+                    <option value="{{ value }}" {% if current_filters.category == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary me-2">Применить</button>
+                <a href="{% url 'admin_panel:message_templates' %}" class="btn btn-outline-secondary">Сбросить</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Список шаблонов -->
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Название</th>
+                    <th>Категория</th>
+                    <th>Содержимое</th>
+                    <th>Использований</th>
+                    <th>Статус</th>
+                    <th>Создан</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for template in templates %}
+                <tr>
+                    <td>
+                        <strong>{{ template.name }}</strong>
+                    </td>
+                    <td>
+                        <span class="badge bg-{% if template.category == 'warning' %}warning{% elif template.category == 'info' %}info{% elif template.category == 'moderation' %}primary{% elif template.category == 'support' %}success{% else %}secondary{% endif %}">
+                            {{ template.get_category_display }}
+                        </span>
+                    </td>
+                    <td>
+                        <div style="max-width: 300px;">
+                            {{ template.content|truncatechars:100 }}
+                        </div>
+                    </td>
+                    <td>{{ template.usage_count }}</td>
+                    <td>
+                        {% if template.is_active %}
+                        <span class="badge bg-success">Активный</span>
+                        {% else %}
+                        <span class="badge bg-secondary">Неактивный</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ template.created_at|date:"d.m.Y H:i" }}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{% url 'admin_panel:message_template_edit' template.id %}" 
+                               class="btn btn-outline-primary" title="Редактировать">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button class="btn btn-outline-danger" 
+                                    onclick="deleteTemplate('{{ template.id }}', '{{ template.name }}')"
+                                    title="Удалить">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-4">
+                        <i class="bi bi-chat-square-text display-4 text-muted mb-2"></i>
+                        <p class="text-muted">Шаблоны не найдены</p>
+                        <a href="{% url 'admin_panel:message_template_create' %}" class="btn btn-primary">
+                            Создать первый шаблон
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function deleteTemplate(templateId, templateName) {
+    if (confirm(`Удалить шаблон "${templateName}"?`)) {
+        fetch(`{% url "admin_panel:message_template_delete" "00000000-0000-0000-0000-000000000000" %}`.replace('00000000-0000-0000-0000-000000000000', templateId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

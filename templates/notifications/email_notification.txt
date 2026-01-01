@@ -1,0 +1,14 @@
+{{ site_name }} - {{ notification.title }}
+
+Hi {{ user.first_name }},
+
+{{ notification.message }}
+
+View this notification in the app: {{ site_url }}/notifications
+
+Best regards,
+The {{ site_name }} Team
+
+---
+You received this email because you have notifications enabled for {{ site_name }}.
+Manage your notification preferences: {{ site_url }}/settings/notifications

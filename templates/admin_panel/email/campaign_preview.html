@@ -1,0 +1,147 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Предварительный просмотр: {{ campaign.name }} - HandshakeMe Admin{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h1 class="h3 mb-0">Предварительный просмотр кампании</h1>
+        <p class="text-muted">{{ campaign.name }}</p>
+    </div>
+    <div>
+        {% if campaign.status == 'draft' or campaign.status == 'scheduled' %}
+        <button class="btn btn-success me-2" onclick="sendCampaign()">
+            <i class="fas fa-paper-plane me-2"></i>Отправить сейчас
+        </button>
+        {% endif %}
+        <a href="{% url 'admin_panel:email_campaigns' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i>Назад к списку
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Предварительный просмотр письма</h5>
+            </div>
+            <div class="card-body">
+                <!-- Email Header -->
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="row">
+                        <div class="col-sm-3 text-muted">От:</div>
+                        <div class="col-sm-9">HandshakeMe &lt;noreply@handshakeme.com&gt;</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3 text-muted">Кому:</div>
+                        <div class="col-sm-9">{{ test_data.user_name }} &lt;{{ test_data.user_email }}&gt;</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-3 text-muted">Тема:</div>
+                        <div class="col-sm-9"><strong>{{ preview_subject }}</strong></div>
+                    </div>
+                </div>
+                
+                <!-- Email Content -->
+                <div class="email-preview" style="border: 1px solid #dee2e6; padding: 20px; background: white;">
+                    {{ preview_html|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Информация о кампании</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-5">Название:</dt>
+                    <dd class="col-sm-7">{{ campaign.name }}</dd>
+                    
+                    <dt class="col-sm-5">Статус:</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge bg-{% if campaign.status == 'sent' %}success{% elif campaign.status == 'sending' %}warning{% elif campaign.status == 'scheduled' %}info{% else %}secondary{% endif %}">
+                            {{ campaign.get_status_display }}
+                        </span>
+                    </dd>
+                    
+                    <dt class="col-sm-5">Аудитория:</dt>
+                    <dd class="col-sm-7">{{ campaign.get_target_audience_display }}</dd>
+                    
+                    <dt class="col-sm-5">Получатели:</dt>
+                    <dd class="col-sm-7">{{ campaign.total_recipients|default:0 }}</dd>
+                    
+                    <dt class="col-sm-5">Шаблон:</dt>
+                    <dd class="col-sm-7">{{ campaign.template.name }}</dd>
+                    
+                    {% if campaign.scheduled_at %}
+                    <dt class="col-sm-5">Запланирована:</dt>
+                    <dd class="col-sm-7">{{ campaign.scheduled_at|date:"d.m.Y H:i" }}</dd>
+                    {% endif %}
+                    
+                    <dt class="col-sm-5">Создана:</dt>
+                    <dd class="col-sm-7">{{ campaign.created_at|date:"d.m.Y H:i" }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        {% if campaign.status == 'sent' %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="card-title mb-0">Статистика доставки</h6>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-6">Отправлено:</dt>
+                    <dd class="col-sm-6">{{ campaign.sent_at|date:"d.m.Y H:i" }}</dd>
+                    
+                    <dt class="col-sm-6">Доставлено:</dt>
+                    <dd class="col-sm-6">
+                        {{ campaign.delivered_count }} ({{ campaign.delivery_rate|floatformat:1 }}%)
+                    </dd>
+                    
+                    <dt class="col-sm-6">Открыто:</dt>
+                    <dd class="col-sm-6">
+                        {{ campaign.opened_count }} ({{ campaign.open_rate|floatformat:1 }}%)
+                    </dd>
+                    
+                    <dt class="col-sm-6">Клики:</dt>
+                    <dd class="col-sm-6">
+                        {{ campaign.clicked_count }} ({{ campaign.click_rate|floatformat:1 }}%)
+                    </dd>
+                </dl>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sendCampaign() {
+    if (confirm('Отправить кампанию "{{ campaign.name }}" сейчас?')) {
+        fetch(`/admin-panel/email/campaigns/{{ campaign.id }}/send/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'send_now=true'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Кампания отправлена!');
+                window.location.href = '{% url "admin_panel:email_campaigns" %}';
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

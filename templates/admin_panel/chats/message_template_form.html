@@ -1,0 +1,151 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}
+{% if template %}Редактировать шаблон{% else %}Создать шаблон{% endif %} - HandshakeMe Admin
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">
+        {% if template %}Редактировать шаблон: {{ template.name }}{% else %}Создать новый шаблон{% endif %}
+    </h1>
+    <a href="{% url 'admin_panel:message_templates' %}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-2"></i>Назад к списку
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Название шаблона <span class="text-danger">*</span></label>
+                        <input type="text" name="name" class="form-control" 
+                               value="{% if template %}{{ template.name }}{% endif %}"
+                               placeholder="Введите название шаблона" required>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Категория <span class="text-danger">*</span></label>
+                            <select name="category" class="form-select" required>
+                                <option value="">Выберите категорию</option>
+                                {% for value, label in categories %}
+                                <option value="{{ value }}" {% if template and template.category == value %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% if template %}
+                        <div class="col-md-6">
+                            <label class="form-label">Статус</label>
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_active" 
+                                       {% if template.is_active %}checked{% endif %}>
+                                <label class="form-check-label">Активный</label>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Содержимое сообщения <span class="text-danger">*</span></label>
+                        <textarea name="content" class="form-control" rows="6" 
+                                  placeholder="Введите текст шаблона..." required>{% if template %}{{ template.content }}{% endif %}</textarea>
+                        <div class="form-text">
+                            Используйте переменные в формате {{variable_name}} для динамического содержимого
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Доступные переменные</label>
+                        <div class="row">
+                            {% for variable in available_variables %}
+                            <div class="col-md-4 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" 
+                                           name="available_variables" value="{{ variable }}"
+                                           {% if template and variable in template.available_variables %}checked{% endif %}>
+                                    <label class="form-check-label">
+                                        <code>{{ variable }}</code>
+                                    </label>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="form-text">
+                            Отметьте переменные, которые используются в этом шаблоне
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-floppy me-2"></i>
+                            {% if template %}Сохранить изменения{% else %}Создать шаблон{% endif %}
+                        </button>
+                        <a href="{% url 'admin_panel:message_templates' %}" class="btn btn-outline-secondary">
+                            Отмена
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h6>Справка по переменным</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    Переменные автоматически заменяются на актуальные значения при отправке сообщения.
+                </p>
+                
+                <div class="mb-3">
+                    <h6 class="small">Основные переменные:</h6>
+                    <ul class="small">
+                        <li><code>admin_name</code> - имя администратора</li>
+                        <li><code>user_name</code> - имя пользователя</li>
+                        <li><code>chat_id</code> - ID чата</li>
+                        <li><code>current_date</code> - текущая дата</li>
+                        <li><code>current_time</code> - текущее время</li>
+                    </ul>
+                </div>
+                
+                <div class="mb-3">
+                    <h6 class="small">Дополнительные:</h6>
+                    <ul class="small">
+                        <li><code>project_title</code> - название проекта</li>
+                        <li><code>reason</code> - причина действия</li>
+                        <li><code>site_name</code> - название сайта</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-info small">
+                    <strong>Пример:</strong><br>
+                    Здравствуйте, {{user_name}}! Ваш чат #{{chat_id}} был заблокирован администратором {{admin_name}} по причине: {{reason}}.
+                </div>
+            </div>
+        </div>
+        
+        {% if template %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6>Статистика использования</h6>
+            </div>
+            <div class="card-body">
+                <p><strong>Использований:</strong> {{ template.usage_count }}</p>
+                <p><strong>Создан:</strong> {{ template.created_at|date:"d.m.Y H:i" }}</p>
+                <p><strong>Обновлен:</strong> {{ template.updated_at|date:"d.m.Y H:i" }}</p>
+                <p><strong>Автор:</strong> {{ template.created_by.get_full_name|default:template.created_by.email }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

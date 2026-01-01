@@ -1,0 +1,130 @@
+<!-- Модальное окно отправки сообщения -->
+<div class="modal fade" id="messageModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Отправить системное сообщение</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="messageForm">
+                    <div class="mb-3">
+                        <label class="form-label">Шаблон сообщения</label>
+                        <select class="form-select" id="messageTemplate" onchange="loadTemplate()">
+                            <option value="">Выберите шаблон или введите сообщение</option>
+                            {% for template in message_templates %}
+                            <option value="{{ template.id }}" data-content="{{ template.content }}">
+                                {{ template.name }} ({{ template.get_category_display }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Сообщение</label>
+                        <textarea class="form-control" id="messageContent" rows="4" 
+                                  placeholder="Введите текст сообщения..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <button type="button" class="btn btn-primary" onclick="sendMessage()">Отправить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadTemplate() {
+    const select = document.getElementById('messageTemplate');
+    const textarea = document.getElementById('messageContent');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (selectedOption.dataset.content) {
+        textarea.value = selectedOption.dataset.content;
+    }
+}
+
+function showMessageModal() {
+    new bootstrap.Modal(document.getElementById('messageModal')).show();
+}
+
+function sendMessage() {
+    const message = document.getElementById('messageContent').value.trim();
+    const templateId = document.getElementById('messageTemplate').value;
+    
+    if (!message && !templateId) {
+        alert('Введите сообщение или выберите шаблон');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('message', message);
+    formData.append('template_id', templateId);
+    
+    fetch('{% url "admin_panel:chat_send_message" chat.id %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            bootstrap.Modal.getInstance(document.getElementById('messageModal')).hide();
+            location.reload();
+        } else {
+            alert('Ошибка: ' + data.message);
+        }
+    });
+}
+
+function blockChat() {
+    const reason = prompt('Причина блокировки чата:');
+    if (reason !== null) {
+        fetch('{% url "admin_panel:chat_block" chat.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'action': 'block',
+                'reason': reason
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+function unblockChat() {
+    if (confirm('Разблокировать чат?')) {
+        fetch('{% url "admin_panel:chat_block" chat.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'action': 'unblock'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+</script>

@@ -1,0 +1,245 @@
+{% block extra_js %}
+<script>
+// Управление выбором чатов
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('select-all');
+    const chatCheckboxes = document.querySelectorAll('.chat-checkbox');
+    const bulkActions = document.getElementById('bulk-actions');
+    const selectedCount = document.getElementById('selected-count');
+    
+    // Обработчик "Выбрать все"
+    selectAllCheckbox.addEventListener('change', function() {
+        chatCheckboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+        });
+        updateBulkActions();
+    });
+    
+    // Обработчики отдельных чекбоксов
+    chatCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', updateBulkActions);
+    });
+    
+    function updateBulkActions() {
+        const selectedChats = document.querySelectorAll('.chat-checkbox:checked');
+        const count = selectedChats.length;
+        
+        selectedCount.textContent = count;
+        bulkActions.style.display = count > 0 ? 'block' : 'none';
+        
+        // Обновляем состояние "Выбрать все"
+        selectAllCheckbox.indeterminate = count > 0 && count < chatCheckboxes.length;
+        selectAllCheckbox.checked = count === chatCheckboxes.length;
+    }
+});
+
+function getSelectedChats() {
+    return Array.from(document.querySelectorAll('.chat-checkbox:checked')).map(cb => cb.value);
+}
+
+function loadTemplate() {
+    const select = document.getElementById('messageTemplate');
+    const textarea = document.getElementById('messageContent');
+    const selectedOption = select.options[select.selectedIndex];
+    
+    if (selectedOption.dataset.content) {
+        textarea.value = selectedOption.dataset.content;
+    }
+}
+
+function showMessageModal(chatId, chatName) {
+    document.getElementById('chatId').value = chatId;
+    document.querySelector('#messageModal .modal-title').textContent = `Отправить сообщение в чат: ${chatName}`;
+    new bootstrap.Modal(document.getElementById('messageModal')).show();
+}
+
+function showBulkMessageModal() {
+    const selectedIds = getSelectedChats();
+    if (selectedIds.length === 0) {
+        alert('Выберите чаты для отправки сообщения');
+        return;
+    }
+    
+    document.getElementById('chatId').value = selectedIds.join(',');
+    document.querySelector('#messageModal .modal-title').textContent = `Отправить сообщение в ${selectedIds.length} чатов`;
+    new bootstrap.Modal(document.getElementById('messageModal')).show();
+}
+
+function sendMessage() {
+    const chatIds = document.getElementById('chatId').value;
+    const message = document.getElementById('messageContent').value.trim();
+    const templateId = document.getElementById('messageTemplate').value;
+    
+    if (!message && !templateId) {
+        alert('Введите сообщение или выберите шаблон');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('message', message);
+    formData.append('template_id', templateId);
+    
+    if (chatIds.includes(',')) {
+        // Массовая отправка
+        formData.append('action', 'send_message');
+        formData.append('message_content', message);
+        chatIds.split(',').forEach(id => formData.append('chat_ids[]', id));
+        
+        fetch('{% url "admin_panel:chat_bulk_action" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('messageModal')).hide();
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    } else {
+        // Отправка в один чат
+        fetch(`{% url "admin_panel:chat_send_message" 0 %}`.replace('0', chatIds), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('messageModal')).hide();
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+function blockChat(chatId, chatName) {
+    const reason = prompt(`Причина блокировки чата "${chatName}":`);
+    if (reason !== null) {
+        fetch(`{% url "admin_panel:chat_block" 0 %}`.replace('0', chatId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'action': 'block',
+                'reason': reason
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+function unblockChat(chatId, chatName) {
+    if (confirm(`Разблокировать чат "${chatName}"?`)) {
+        fetch(`{% url "admin_panel:chat_block" 0 %}`.replace('0', chatId), {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'action': 'unblock'
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+function bulkBlockChats() {
+    const selectedIds = getSelectedChats();
+    const activeIds = selectedIds.filter(id => {
+        const checkbox = document.querySelector(`input[value="${id}"]`);
+        return checkbox.dataset.status === 'active';
+    });
+    
+    if (activeIds.length === 0) {
+        alert('Выберите активные чаты для блокировки');
+        return;
+    }
+    
+    const reason = prompt(`Причина блокировки ${activeIds.length} чатов:`);
+    if (reason !== null) {
+        fetch('{% url "admin_panel:chat_bulk_action" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'action': 'block',
+                'reason': reason,
+                'chat_ids': activeIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+
+function bulkUnblockChats() {
+    const selectedIds = getSelectedChats();
+    const blockedIds = selectedIds.filter(id => {
+        const checkbox = document.querySelector(`input[value="${id}"]`);
+        return checkbox.dataset.status === 'blocked';
+    });
+    
+    if (blockedIds.length === 0) {
+        alert('Выберите заблокированные чаты для разблокировки');
+        return;
+    }
+    
+    if (confirm(`Разблокировать ${blockedIds.length} выбранных чатов?`)) {
+        fetch('{% url "admin_panel:chat_bulk_action" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+                'action': 'unblock',
+                'chat_ids': blockedIds
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

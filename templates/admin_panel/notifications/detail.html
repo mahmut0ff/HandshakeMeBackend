@@ -1,0 +1,291 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}{{ notification.title }} - Push уведомления - HandshakeMe Админ-панель{% endblock %}
+
+{% block page_title %}Детали уведомления{% endblock %}
+
+{% block extra_css %}
+<style>
+.notification-preview {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 10px 0;
+}
+
+.device-preview {
+    max-width: 300px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    padding: 20px;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+}
+
+.progress-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <!-- Информация об уведомлении -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="bi bi-bell me-2"></i>
+                    Информация об уведомлении
+                </h5>
+                <div>
+                    {% if notification.status == 'draft' %}
+                        <span class="badge bg-secondary">Черновик</span>
+                    {% elif notification.status == 'scheduled' %}
+                        <span class="badge bg-info">Запланировано</span>
+                    {% elif notification.status == 'sending' %}
+                        <span class="badge bg-warning">Отправляется</span>
+                    {% elif notification.status == 'sent' %}
+                        <span class="badge bg-success">Отправлено</span>
+                    {% else %}
+                        <span class="badge bg-danger">Ошибка</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Основная информация</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td><strong>Заголовок:</strong></td>
+                                <td>{{ notification.title }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Сообщение:</strong></td>
+                                <td>{{ notification.message }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Целевая аудитория:</strong></td>
+                                <td>{{ notification.get_target_audience_display }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Создано:</strong></td>
+                                <td>{{ notification.created_at|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Автор:</strong></td>
+                                <td>{{ notification.created_by.get_full_name|default:notification.created_by.email }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Планирование и отправка</h6>
+                        <table class="table table-sm">
+                            {% if notification.scheduled_at %}
+                            <tr>
+                                <td><strong>Запланировано на:</strong></td>
+                                <td>{{ notification.scheduled_at|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            {% endif %}
+                            {% if notification.sent_at %}
+                            <tr>
+                                <td><strong>Отправлено:</strong></td>
+                                <td>{{ notification.sent_at|date:"d.m.Y H:i" }}</td>
+                            </tr>
+                            {% endif %}
+                            <tr>
+                                <td><strong>Получателей:</strong></td>
+                                <td>{{ notification.total_recipients|default:0 }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Доставлено:</strong></td>
+                                <td>{{ notification.delivered_count|default:0 }}</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Открыто:</strong></td>
+                                <td>{{ notification.opened_count|default:0 }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Предварительный просмотр -->
+                <div class="mt-4">
+                    <h6>Предварительный просмотр</h6>
+                    <div class="notification-preview">
+                        <div class="device-preview">
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-app text-primary me-2"></i>
+                                <small class="text-muted">HandshakeMe</small>
+                                <small class="text-muted ms-auto">сейчас</small>
+                            </div>
+                            <div class="fw-bold">{{ notification.title }}</div>
+                            <div class="text-muted">{{ notification.message }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Действия -->
+                <div class="mt-4">
+                    {% if notification.status == 'draft' %}
+                        <button class="btn btn-success" onclick="sendNotification('{{ notification.id }}')">
+                            <i class="bi bi-send me-1"></i>
+                            Отправить сейчас
+                        </button>
+                    {% endif %}
+                    <a href="{% url 'admin_panel:push_notification_preview' notification.id %}" class="btn btn-outline-primary">
+                        <i class="bi bi-eye me-1"></i>
+                        Полный предварительный просмотр
+                    </a>
+                    <a href="{% url 'admin_panel:notifications' %}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Назад к списку
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Получатели (превью) -->
+        {% if recipients_preview %}
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-people me-2"></i>
+                    Получатели (первые 10)
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Email</th>
+                                <th>Имя</th>
+                                <th>Тип</th>
+                                <th>Статус</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for recipient in recipients_preview %}
+                            <tr>
+                                <td>{{ recipient.email }}</td>
+                                <td>{{ recipient.get_full_name|default:"-" }}</td>
+                                <td>{{ recipient.get_user_type_display|default:"-" }}</td>
+                                <td>
+                                    {% if recipient.is_active %}
+                                        <span class="badge bg-success">Активен</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Неактивен</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if notification.total_recipients > 10 %}
+                <p class="text-muted mb-0">И еще {{ notification.total_recipients|add:"-10" }} получателей...</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-4">
+        <!-- Статистика -->
+        <div class="card stats-card mb-4">
+            <div class="card-body text-center text-white">
+                <h5 class="mb-3">Статистика доставки</h5>
+                
+                <div class="row text-center">
+                    <div class="col-6 mb-3">
+                        <div class="progress-circle bg-success bg-opacity-25 mx-auto">
+                            {{ stats.delivery_rate|floatformat:1 }}%
+                        </div>
+                        <small>Доставлено</small>
+                    </div>
+                    <div class="col-6 mb-3">
+                        <div class="progress-circle bg-info bg-opacity-25 mx-auto">
+                            {{ stats.open_rate|floatformat:1 }}%
+                        </div>
+                        <small>Открыто</small>
+                    </div>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h4>{{ stats.total_recipients }}</h4>
+                        <small>Получателей</small>
+                    </div>
+                    <div class="col-4">
+                        <h4>{{ stats.delivered_count }}</h4>
+                        <small>Доставлено</small>
+                    </div>
+                    <div class="col-4">
+                        <h4>{{ stats.opened_count }}</h4>
+                        <small>Открыто</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Дополнительные данные -->
+        {% if notification.extra_data %}
+        <div class="card">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="bi bi-code me-2"></i>
+                    Дополнительные данные
+                </h6>
+            </div>
+            <div class="card-body">
+                <pre class="bg-light p-2 rounded"><code>{{ notification.extra_data|pprint }}</code></pre>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sendNotification(notificationId) {
+    if (confirm('Отправить уведомление сейчас?')) {
+        fetch(`/admin-panel/notifications/${notificationId}/send/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при отправке');
+        });
+    }
+}
+</script>
+{% endblock %}

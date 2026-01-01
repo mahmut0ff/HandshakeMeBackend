@@ -1,0 +1,152 @@
+{% extends 'admin_panel/base.html' %}
+
+{% block title %}Планировщик Push уведомлений{% endblock %}
+
+{% block page_title %}Планировщик Push уведомлений{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <i class="bi bi-clock fs-1 text-info mb-2"></i>
+                <h3 class="mb-1">{{ stats.scheduled_count }}</h3>
+                <p class="mb-0">Запланированных уведомлений</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                {% if stats.next_notification %}
+                    <i class="bi bi-bell fs-1 text-warning mb-2"></i>
+                    <h6 class="mb-1">Следующее уведомление</h6>
+                    <p class="mb-0">{{ stats.next_notification.scheduled_at|date:"d.m.Y H:i" }}</p>
+                    <small class="text-muted">{{ stats.next_notification.title }}</small>
+                {% else %}
+                    <i class="bi bi-check-circle fs-1 text-success mb-2"></i>
+                    <h6 class="mb-1">Нет запланированных</h6>
+                    <p class="mb-0">уведомлений</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar me-2"></i>
+                    Запланированные уведомления
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if scheduled_notifications %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Заголовок</th>
+                                    <th>Аудитория</th>
+                                    <th>Запланировано на</th>
+                                    <th>Создано</th>
+                                    <th>Действия</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for notification in scheduled_notifications %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">{{ notification.title }}</div>
+                                        <small class="text-muted">{{ notification.message|truncatechars:50 }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">
+                                            {{ notification.get_target_audience_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ notification.scheduled_at|date:"d.m.Y" }}</div>
+                                        <small class="text-muted">{{ notification.scheduled_at|time:"H:i" }}</small>
+                                    </td>
+                                    <td>
+                                        <div>{{ notification.created_at|date:"d.m.Y" }}</div>
+                                        <small class="text-muted">{{ notification.created_by.email }}</small>
+                                    </td>
+                                    <td>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'admin_panel:push_notification_detail' notification.id %}" 
+                                               class="btn btn-outline-primary" title="Подробности">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{% url 'admin_panel:push_notification_preview' notification.id %}" 
+                                               class="btn btn-outline-info" title="Предварительный просмотр">
+                                                <i class="bi bi-phone"></i>
+                                            </a>
+                                            <button class="btn btn-outline-success" 
+                                                    onclick="sendNow('{{ notification.id }}')" 
+                                                    title="Отправить сейчас">
+                                                <i class="bi bi-send"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-calendar-x fs-1 text-muted mb-3"></i>
+                        <h5 class="text-muted">Нет запланированных уведомлений</h5>
+                        <p class="text-muted">Создайте уведомление с отложенной отправкой</p>
+                        <a href="{% url 'admin_panel:notifications' %}" class="btn btn-primary">
+                            <i class="bi bi-plus me-1"></i>
+                            Создать уведомление
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-12">
+        <a href="{% url 'admin_panel:notifications' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left me-1"></i>
+            Назад к уведомлениям
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function sendNow(notificationId) {
+    if (confirm('Отправить уведомление сейчас? Это отменит запланированное время.')) {
+        fetch(`/admin-panel/notifications/${notificationId}/send/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Ошибка: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Произошла ошибка при отправке');
+        });
+    }
+}
+</script>
+{% endblock %}
